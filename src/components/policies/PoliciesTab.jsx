@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { Clock, Users, Baby, PawPrint, CreditCard, Calendar, AlertCircle, Edit2 } from 'lucide-react';
-import PoliticasModal from './PoliticasModal';
+import { Clock, Calendar, AlertCircle, Edit2 } from 'lucide-react';
+import PoliticasModalSimple from './PoliticasModalSimple';
 import { useAppContext } from '../../context/AppContext';
 import { useMessage } from '../../hooks/useMessage';
 
@@ -64,45 +64,23 @@ function PoliciesTab({ politicas }) {
   const policyConfigs = [
     {
       icon: Clock,
-      label: 'Cancelación anticipada',
+      label: 'Tiempo de antelación para cancelar',
       value: politicas.cancelacion_horas || 24,
       suffix: ' horas'
     },
     {
       icon: Calendar,
-      label: 'Tiempo de mesa',
+      label: 'Duración estándar de mesa',
       value: politicas.tiempo_mesa_minutos || 120,
       suffix: ' minutos'
     },
     {
-      icon: Baby,
-      label: 'Niños permitidos',
-      value: politicas.niños_permitidos !== false,
-      type: 'boolean'
-    },
-    {
-      icon: PawPrint,
-      label: 'Mascotas permitidas',
-      value: politicas.mascotas_permitidas || false,
-      type: 'boolean'
-    },
-    {
-      icon: CreditCard,
-      label: 'Anticipo requerido',
-      value: politicas.anticipo_requerido || false,
+      icon: AlertCircle,
+      label: 'Permitir fumadores en terraza',
+      value: politicas.fumadores_terraza !== false,
       type: 'boolean'
     }
   ];
-
-  // Si hay anticipo, añadir la cantidad
-  if (politicas.anticipo_requerido) {
-    policyConfigs.push({
-      icon: CreditCard,
-      label: 'Cantidad del anticipo',
-      value: politicas.anticipo_cantidad || 0,
-      type: 'currency'
-    });
-  }
 
   return (
     <div className="space-y-6">
@@ -171,7 +149,7 @@ function PoliciesTab({ politicas }) {
       )}
 
       {/* Modal de edición */}
-      <PoliticasModal
+      <PoliticasModalSimple
         abierto={modalAbierto}
         politicas={politicas}
         onCerrar={() => setModalAbierto(false)}
