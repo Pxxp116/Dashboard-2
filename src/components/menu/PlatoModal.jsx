@@ -125,6 +125,15 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
     
     setSubiendoImagen(true);
     try {
+      // Por ahora, crear una URL temporal para mostrar la imagen
+      // mientras se implementa el endpoint de subida en el backend
+      const imageURL = URL.createObjectURL(file);
+      handleChange('imagen_url', imageURL);
+      
+      mostrarMensaje('Imagen cargada temporalmente. Funcionalidad de subida en desarrollo.', 'info');
+      
+      // TODO: Implementar subida real cuando el endpoint esté disponible
+      /*
       const formDataImg = new FormData();
       formDataImg.append('imagen', file);
       
@@ -134,6 +143,10 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
         body: formDataImg
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (data.exito) {
@@ -142,9 +155,10 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       } else {
         mostrarMensaje(data.mensaje || 'Error al subir imagen', 'error');
       }
+      */
     } catch (error) {
       console.error('Error subiendo imagen:', error);
-      mostrarMensaje('Error al subir imagen: ' + error.message, 'error');
+      mostrarMensaje('Error al procesar imagen: ' + error.message, 'error');
     } finally {
       setSubiendoImagen(false);
     }
@@ -184,6 +198,19 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
     
     setGuardando(true);
     try {
+      // Simulamos el guardado mientras se implementan los endpoints del backend
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simula delay de red
+      
+      mostrarMensaje(
+        `Plato ${modo === 'crear' ? 'creado' : 'actualizado'} correctamente (modo demo)`, 
+        'success'
+      );
+      
+      // Simulamos la actualización de datos
+      if (onGuardar) onGuardar();
+      
+      // TODO: Implementar cuando los endpoints estén disponibles
+      /*
       const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       const url = modo === 'crear' 
         ? `${API_URL}/admin/menu/plato`
@@ -197,6 +224,10 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
         body: JSON.stringify(formData)
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (data.exito) {
@@ -209,6 +240,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       } else {
         mostrarMensaje(data.mensaje || 'Error al guardar plato', 'error');
       }
+      */
     } catch (error) {
       console.error('Error guardando plato:', error);
       mostrarMensaje('Error al guardar plato: ' + error.message, 'error');
@@ -239,9 +271,14 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">
-            {modo === 'crear' ? 'Nuevo Plato' : 'Editar Plato'}
-          </h3>
+          <div>
+            <h3 className="text-lg font-bold">
+              {modo === 'crear' ? 'Nuevo Plato' : 'Editar Plato'}
+            </h3>
+            <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mt-1">
+              Modo demo - Los cambios se simulan hasta que los endpoints estén disponibles
+            </p>
+          </div>
           <button
             onClick={onCerrar}
             className="p-1 hover:bg-gray-100 rounded"
@@ -328,7 +365,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
             
             {/* Vista previa de imagen */}
             {formData.imagen_url && (
-              <div className="mb-3">
+              <div className="mb-3 relative">
                 <img
                   src={formData.imagen_url}
                   alt="Vista previa"
@@ -337,8 +374,30 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
                     e.target.style.display = 'none';
                   }}
                 />
+                {subiendoImagen && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                    <div className="flex items-center text-white">
+                      <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                      <span>Procesando imagen...</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+            
+            {/* URL manual de imagen */}
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                URL de imagen (opcional)
+              </label>
+              <input
+                type="url"
+                value={formData.imagen_url}
+                onChange={(e) => handleChange('imagen_url', e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                placeholder="https://ejemplo.com/imagen.jpg"
+              />
+            </div>
             
             {/* Subida de imagen */}
             <div className="flex items-center space-x-2">
@@ -353,14 +412,18 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={subiendoImagen}
-                className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className={`flex items-center px-3 py-2 border rounded-lg transition-colors ${
+                  subiendoImagen 
+                    ? 'border-blue-300 bg-blue-50 text-blue-600 cursor-not-allowed' 
+                    : 'border-gray-300 hover:bg-gray-50'
+                }`}
               >
                 {subiendoImagen ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                {subiendoImagen ? 'Subiendo...' : 'Subir imagen'}
+                {subiendoImagen ? 'Procesando...' : 'Seleccionar archivo'}
               </button>
               
               {formData.imagen_url && (
@@ -369,13 +432,14 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
                   onClick={() => handleChange('imagen_url', '')}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Eliminar imagen"
+                  disabled={subiendoImagen}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Formatos soportados: JPG, PNG, WebP. Máximo 5MB.
+              Puedes subir un archivo local o introducir una URL de imagen.
             </p>
           </div>
 
