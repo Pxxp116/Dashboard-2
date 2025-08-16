@@ -12,9 +12,10 @@ import { ESTADOS_MESA } from '../../types';
  * @param {Object} props - Props del componente
  * @param {Object} props.mesa - Datos de la mesa
  * @param {Function} [props.onClick] - Callback al hacer click
+ * @param {Function} [props.onDoubleClick] - Callback al hacer doble click
  * @returns {JSX.Element} Componente TableCard
  */
-function TableCard({ mesa, onClick }) {
+function TableCard({ mesa, onClick, onDoubleClick }) {
   const esOcupada = mesa.estado === ESTADOS_MESA.OCUPADA;
   
   /**
@@ -42,6 +43,7 @@ function TableCard({ mesa, onClick }) {
     <div
       className={`p-4 rounded-lg text-center transition-all cursor-pointer ${estilos.container}`}
       onClick={() => onClick && onClick(mesa)}
+      onDoubleClick={() => onDoubleClick && onDoubleClick(mesa)}
       role="button"
       tabIndex={0}
       onKeyPress={(e) => {

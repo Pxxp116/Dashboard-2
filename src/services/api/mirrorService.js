@@ -124,6 +124,22 @@ class SystemService {
   }
 
   /**
+   * Actualiza una mesa existente
+   * @param {number} mesaId - ID de la mesa
+   * @param {Object} mesaData - Datos actualizados de la mesa
+   * @returns {Promise<{exito: boolean, mensaje: string}>}
+   */
+  async actualizarMesa(mesaId, mesaData) {
+    try {
+      const response = await apiClient.patch(`/admin/mesa/${mesaId}`, mesaData);
+      return response;
+    } catch (error) {
+      console.error('Error actualizando mesa:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Elimina una mesa
    * @param {number} mesaId - ID de la mesa
    * @returns {Promise<{exito: boolean, mensaje: string}>}
@@ -165,6 +181,22 @@ class SystemService {
       return response;
     } catch (error) {
       console.error('Error obteniendo historial:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el historial de reservas para una mesa específica
+   * @param {number} mesaId - ID de la mesa
+   * @param {number} [limite=100] - Número de registros a obtener
+   * @returns {Promise<{exito: boolean, reservas: Array}>}
+   */
+  async obtenerHistorialMesa(mesaId, limite = 100) {
+    try {
+      const response = await apiClient.get(`/admin/mesa/${mesaId}/historial`, { limite });
+      return response;
+    } catch (error) {
+      console.error('Error obteniendo historial de mesa:', error);
       throw error;
     }
   }

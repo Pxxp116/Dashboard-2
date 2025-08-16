@@ -4,9 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { Users, Filter } from 'lucide-react';
+import { Users, Filter, Plus, Edit, Trash2 } from 'lucide-react';
 import TableCard from './TableCard';
+import MesaModal from './MesaModal';
+import HistorialMesaModal from './HistorialMesaModal';
 import { ESTADOS_MESA } from '../../types';
+import { useAppContext } from '../../context/AppContext';
+import mirrorService from '../../services/api/mirrorService';
+import { useMessage } from '../../hooks/useMessage';
 
 /**
  * Tab de mesas del restaurante
@@ -17,6 +22,11 @@ import { ESTADOS_MESA } from '../../types';
 function MesasTab({ mesas }) {
   const [filtroEstado, setFiltroEstado] = useState('todas');
   const [filtroCapacidad, setFiltroCapacidad] = useState('todas');
+  const [modalMesa, setModalMesa] = useState({ abierto: false, mesa: null, modo: 'crear' });
+  const [modalHistorial, setModalHistorial] = useState({ abierto: false, mesa: null });
+  
+  const { actualizarDatosEspejo } = useAppContext();
+  const { mostrarMensaje } = useMessage();
 
   /**
    * Filtra las mesas según los criterios seleccionados
@@ -45,6 +55,62 @@ function MesasTab({ mesas }) {
     const porcentajeOcupacion = total > 0 ? Math.round((ocupadas / total) * 100) : 0;
     
     return { total, ocupadas, libres, porcentajeOcupacion };
+  };
+
+  const abrirModalCrear = () => {
+    setModalMesa({ abierto: true, mesa: null, modo: 'crear' });
+  };
+
+  const abrirModalEditar = (mesa) => {
+    setModalMesa({ abierto: true, mesa, modo: 'editar' });
+  };
+
+  const abrirHistorial = (mesa) => {
+    setModalHistorial({ abierto: true, mesa });
+  };
+
+  const cerrarModales = () => {
+    setModalMesa({ abierto: false, mesa: null, modo: 'crear' });
+    setModalHistorial({ abierto: false, mesa: null });
+  };
+
+  const guardarMesa = async (datosMesa) => {
+    try {
+      let response;
+      if (modalMesa.modo === 'crear') {
+        response = await mirrorService.crearMesa(datosMesa);
+      } else {
+        response = await mirrorService.actualizarMesa(modalMesa.mesa.id, datosMesa);
+      }
+      
+      if (response.exito) {
+        mostrarMensaje(response.mensaje, 'success');
+        await actualizarDatosEspejo();
+        cerrarModales();
+      } else {
+        mostrarMensaje(response.mensaje || 'Error al guardar mesa', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al guardar mesa: ' + error.message, 'error');
+    }
+  };
+
+  const eliminarMesa = async (mesaId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta mesa?')) {
+      return;
+    }
+    
+    try {
+      const response = await mirrorService.eliminarMesa(mesaId);
+      if (response.exito) {
+        mostrarMensaje(response.mensaje, 'success');
+        await actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(response.mensaje || 'Error al eliminar mesa', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al eliminar mesa: ' + error.message, 'error');
+    }
   };
 
   const stats = calcularEstadisticas();
@@ -84,6 +150,14 @@ function MesasTab({ mesas }) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Estado de Mesas</h2>
           
+          <button
+            onClick={abrirModalCrear}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nueva Mesa</span>
+          </button>
+          
           {/* Filtros */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
@@ -121,11 +195,54 @@ function MesasTab({ mesas }) {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {mesasParaMostrar.map((mesa) => (
-              <TableCard key={mesa.id} mesa={mesa} />
+              <div key={mesa.id} className="relative group">
+                <TableCard 
+                  mesa={mesa} 
+                  onDoubleClick={() => abrirHistorial(mesa)}
+                  onClick={() => abrirHistorial(mesa)}
+                />
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abrirModalEditar(mesa);
+                    }}
+                    className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 text-xs"
+                    title="Editar mesa"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      eliminarMesa(mesa.id);
+                    }}
+                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 text-xs"
+                    title="Eliminar mesa"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
+      
+      {/* Modales */}
+      <MesaModal
+        abierto={modalMesa.abierto}
+        mesa={modalMesa.mesa}
+        modo={modalMesa.modo}
+        onGuardar={guardarMesa}
+        onCerrar={cerrarModales}
+      />
+      
+      <HistorialMesaModal
+        abierto={modalHistorial.abierto}
+        mesa={modalHistorial.mesa}
+        onCerrar={cerrarModales}
+      />
     </div>
   );
 }
