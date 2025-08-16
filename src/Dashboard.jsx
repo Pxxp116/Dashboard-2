@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building } from 'lucide-react';
 
-// Usar variable de entorno para la URL de la API
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
 // Log para debug (solo en desarrollo)
@@ -557,13 +556,16 @@ function GastroBotDashboard() {
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
-            {[
-              { id: 'inicio', icon: Home, label: 'Inicio' },
-              { id: 'reservas', icon: Calendar, label: 'Reservas' },
-              { id: 'mesas', icon: Users, label: 'Mesas' },
-              { id: 'menu', icon: Menu, label: 'Menú' },
-              { id: 'politicas', icon: Settings, label: 'Políticas' },
-              { id: 'espejo', icon: Eye, label: 'Archivo Espejo' }
+            
+              {[
+      { id: 'inicio', icon: Home, label: 'Inicio' },
+      { id: 'info', icon: Building, label: 'Información' },
+      { id: 'reservas', icon: Calendar, label: 'Reservas' },
+      { id: 'mesas', icon: Users, label: 'Mesas' },
+      { id: 'menu', icon: Menu, label: 'Menú' },
+      { id: 'politicas', icon: Settings, label: 'Políticas' },
+      { id: 'espejo', icon: Eye, label: 'Archivo Espejo' }
+
             ].map((item) => (
               <button
                 key={item.id}
@@ -604,6 +606,13 @@ function GastroBotDashboard() {
         {activeTab === 'inicio' && (
           <div className="space-y-6">
             <EstadoSistema />
+
+        {activeTab === 'info' && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Información General</h2>
+            <p className="text-gray-500">Esta sección estará disponible próximamente.</p>
+          </div>
+        )}
             
             {/* Próximas Reservas */}
             <div className="bg-white rounded-lg shadow-md p-6">
