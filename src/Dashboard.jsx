@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building } from 'lucide-react';
 
+import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
 // Log para debug (solo en desarrollo)
@@ -607,12 +608,7 @@ function GastroBotDashboard() {
           <div className="space-y-6">
             <EstadoSistema />
 
-        {activeTab === 'info' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Información General</h2>
-            <p className="text-gray-500">Esta sección estará disponible próximamente.</p>
-          </div>
-        )}
+        {activeTab === 'info' && <InfoGeneralTab />}
             
             {/* Próximas Reservas */}
             <div className="bg-white rounded-lg shadow-md p-6">
