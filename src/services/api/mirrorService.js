@@ -115,7 +115,7 @@ class SystemService {
    */
   async crearMesa(mesaData) {
     try {
-      const response = await apiClient.post('/admin/mesa', mesaData);
+      const response = await apiClient.post('/admin/mesas', mesaData);
       return response;
     } catch (error) {
       console.error('Error creando mesa:', error);
@@ -131,7 +131,7 @@ class SystemService {
    */
   async actualizarMesa(mesaId, mesaData) {
     try {
-      const response = await apiClient.patch(`/admin/mesa/${mesaId}`, mesaData);
+      const response = await apiClient.put(`/admin/mesas/${mesaId}`, mesaData);
       return response;
     } catch (error) {
       console.error('Error actualizando mesa:', error);
@@ -146,7 +146,18 @@ class SystemService {
    */
   async eliminarMesa(mesaId) {
     try {
-      const response = await apiClient.delete(`/admin/mesa/${mesaId}`);
+      // Como alternativa, desactivar la mesa hasta que el backend tenga DELETE
+      const response = await apiClient.put(`/admin/mesas/${mesaId}`, {
+        activa: false
+      });
+      
+      if (response.exito) {
+        return {
+          exito: true,
+          mensaje: 'Mesa desactivada correctamente'
+        };
+      }
+      
       return response;
     } catch (error) {
       console.error('Error eliminando mesa:', error);

@@ -74,6 +74,14 @@ export const DATE_FORMATS = {
   API_DATETIME: 'YYYY-MM-DD HH:mm:ss'
 };
 
+// Tipos de mensaje
+export const TIPOS_MENSAJE = {
+  SUCCESS: 'success',
+  ERROR: 'error',
+  WARNING: 'warning',
+  INFO: 'info'
+};
+
 // Validaciones
 export const VALIDATION_RULES = {
   PHONE_REGEX: /^\+?[0-9\s-()]+$/,

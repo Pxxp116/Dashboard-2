@@ -5,6 +5,7 @@
 
 import React from 'react';
 import Dashboard from './Dashboard';
+import { AppProvider } from './context/AppContext';
 
 /**
  * Componente principal de la aplicación
@@ -12,9 +13,11 @@ import Dashboard from './Dashboard';
  */
 function App() {
   return (
-    <div className="App">
-      <Dashboard />
-    </div>
+    <AppProvider>
+      <div className="App">
+        <Dashboard />
+      </div>
+    </AppProvider>
   );
 }
 

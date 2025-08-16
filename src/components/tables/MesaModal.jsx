@@ -151,7 +151,10 @@ function MesaModal({ abierto, mesa, modo, onGuardar, onCerrar }) {
               <input
                 type="number"
                 value={formData.capacidad}
-                onChange={(e) => manejarCambio('capacidad', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const valor = e.target.value === '' ? '' : parseInt(e.target.value) || 1;
+                  manejarCambio('capacidad', valor);
+                }}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errores.capacidad ? 'border-red-500' : 'border-gray-300'
                 }`}

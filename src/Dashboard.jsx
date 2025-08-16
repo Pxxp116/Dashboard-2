@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building, Edit2 } from 'lucide-react';
 
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
+import MesasTab from './components/tables/MesasTab';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
 // Log para debug (solo en desarrollo)
@@ -444,36 +445,8 @@ function GastroBotDashboard() {
     </div>
   );
 
-  // Componente de Mesas
-  const TabMesas = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-6">Estado de Mesas</h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {mesas.map((mesa) => (
-            <div
-              key={mesa.id}
-              className={`p-4 rounded-lg text-center transition-all ${
-                mesa.estado === 'ocupada'
-                  ? 'bg-red-100 border-2 border-red-300'
-                  : 'bg-green-100 border-2 border-green-300'
-              }`}
-            >
-              <p className="font-bold text-lg">Mesa {mesa.numero_mesa}</p>
-              <p className="text-sm mt-1">
-                <Users className="w-4 h-4 inline mr-1" />
-                {mesa.capacidad} personas
-              </p>
-              <p className="text-xs mt-2 font-medium">
-                {mesa.estado === 'ocupada' ? 'OCUPADA' : 'LIBRE'}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  // Componente de Mesas - usando el componente actualizado
+  const TabMesas = () => <MesasTab mesas={mesas} />;
 
   // Componente de Políticas
   const TabPoliticas = () => (
@@ -986,7 +959,7 @@ function GastroBotDashboard() {
         )}
 
         {activeTab === 'reservas' && <TabReservas />}
-        {activeTab === 'mesas' && <TabMesas />}
+        {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && <TabMenu />}
         {activeTab === 'politicas' && <TabPoliticas />}
         {activeTab === 'espejo' && <TabArchivoEspejo />}
