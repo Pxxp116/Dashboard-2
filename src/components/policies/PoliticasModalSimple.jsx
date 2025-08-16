@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { X, Save, Clock, Calendar, AlertCircle, PawPrint } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useMessage } from '../../hooks/useMessage';
 import mirrorService from '../../services/api/mirrorService';
@@ -22,6 +22,7 @@ function PoliticasModalSimple({ abierto, politicas, onCerrar, onGuardar }) {
   const [formData, setFormData] = useState({
     cancelacion_horas: 24,
     tiempo_mesa_minutos: 120,
+    mascotas_permitidas: false,
     fumadores_terraza: true
   });
 
@@ -36,6 +37,7 @@ function PoliticasModalSimple({ abierto, politicas, onCerrar, onGuardar }) {
       setFormData({
         cancelacion_horas: politicas.cancelacion_horas || 24,
         tiempo_mesa_minutos: politicas.tiempo_mesa_minutos || 120,
+        mascotas_permitidas: politicas.mascotas_permitidas || false,
         fumadores_terraza: politicas.fumadores_terraza !== false
       });
       setErrores({});
@@ -170,6 +172,27 @@ function PoliticasModalSimple({ abierto, politicas, onCerrar, onGuardar }) {
               <p className="text-gray-500 text-sm mt-1">
                 Tiempo promedio que cada reserva ocupa la mesa
               </p>
+            </div>
+
+            {/* Mascotas permitidas */}
+            <div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.mascotas_permitidas}
+                  onChange={(e) => manejarCambio('mascotas_permitidas', e.target.checked)}
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <PawPrint className="w-4 h-4 mr-2 text-gray-600" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Mascotas permitidas
+                  </span>
+                  <p className="text-gray-500 text-sm">
+                    Permite que los clientes traigan sus mascotas al restaurante
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Permitir fumadores en terraza */}

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Clock, Calendar, AlertCircle, Edit2 } from 'lucide-react';
+import { Clock, Calendar, AlertCircle, Edit2, PawPrint } from 'lucide-react';
 import PoliticasModalSimple from './PoliticasModalSimple';
 import { useAppContext } from '../../context/AppContext';
 import { useMessage } from '../../hooks/useMessage';
@@ -73,6 +73,12 @@ function PoliciesTab({ politicas }) {
       label: 'Duración estándar de mesa',
       value: politicas.tiempo_mesa_minutos || 120,
       suffix: ' minutos'
+    },
+    {
+      icon: PawPrint,
+      label: 'Mascotas permitidas',
+      value: politicas.mascotas_permitidas || false,
+      type: 'boolean'
     },
     {
       icon: AlertCircle,
