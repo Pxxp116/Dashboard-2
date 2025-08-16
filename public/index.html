@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta
+      name="description"
+      content="GastroBot Dashboard - Sistema profesional de gestión de reservas para restaurantes"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json proporciona metadatos utilizados cuando tu aplicación web se instala en el
+      dispositivo móvil o escritorio del usuario. Ver https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Nota: el uso de %PUBLIC_URL% en las etiquetas anteriores.
+      Será reemplazado con la URL del directorio `public` durante el build.
+      Solo los archivos dentro del directorio `public` pueden ser referenciados desde el HTML.
+
+      A diferencia de "/favicon.ico" o "favicon.ico", "%PUBLIC_URL%/favicon.ico" funcionará
+      correctamente tanto con enrutamiento del lado del cliente como con una URL pública no root.
+      Aprende cómo configurar una URL pública no root ejecutando `npm run build`.
+    -->
+    
+    <!-- Preconectar a servicios externos si es necesario -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <title>GastroBot Dashboard</title>
+    
+    <!-- Meta tags para SEO -->
+    <meta property="og:title" content="GastroBot Dashboard" />
+    <meta property="og:description" content="Sistema profesional de gestión de reservas para restaurantes" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GastroBot Dashboard" />
+    <meta name="twitter:description" content="Sistema profesional de gestión de reservas para restaurantes" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+  </head>
+  <body>
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+        <h1>JavaScript Requerido</h1>
+        <p>Necesitas habilitar JavaScript para ejecutar esta aplicación.</p>
+        <p>GastroBot Dashboard requiere JavaScript para funcionar correctamente.</p>
+      </div>
+    </noscript>
+    <div id="root"></div>
+    <!--
+      Este archivo HTML es una plantilla.
+      Si lo abres directamente en el navegador, verás una página vacía.
+
+      Puedes agregar webfonts, meta tags, o analytics a este archivo.
+      El paso de build colocará los scripts JavaScript empaquetados en el <body> tag.
+
+      Para comenzar el desarrollo, ejecuta `npm start` o `yarn start`.
+      Para crear un bundle de producción, usa `npm run build` o `yarn build`.
+    -->
+  </body>
+</html>

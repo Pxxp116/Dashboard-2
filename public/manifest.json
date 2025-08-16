@@ -1,0 +1,49 @@
+{
+  "short_name": "GastroBot",
+  "name": "GastroBot Dashboard",
+  "description": "Sistema profesional de gestión de reservas para restaurantes",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "food"],
+  "lang": "es-ES",
+  "dir": "ltr",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Nueva Reserva",
+      "short_name": "Reserva",
+      "description": "Crear una nueva reserva",
+      "url": "/?action=nueva-reserva",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver Mesas",
+      "short_name": "Mesas",
+      "description": "Ver estado de las mesas",
+      "url": "/?tab=mesas",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
+    }
+  ]
+}
