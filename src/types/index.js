@@ -20,6 +20,7 @@
  * @typedef {Object} Mesa
  * @property {number} id - ID único de la mesa
  * @property {number} numero_mesa - Número de la mesa
+ * @property {string} [nombre] - Nombre personalizado de la mesa
  * @property {number} capacidad - Capacidad máxima de personas
  * @property {string} estado - Estado actual (libre, ocupada)
  * @property {string} [zona] - Zona del restaurante

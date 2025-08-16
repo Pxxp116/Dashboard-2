@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Users, MapPin, Hash } from 'lucide-react';
+import { X, Save, Users, MapPin, Hash, Tag } from 'lucide-react';
 
 /**
  * Modal para crear/editar mesas
@@ -19,6 +19,7 @@ import { X, Save, Users, MapPin, Hash } from 'lucide-react';
 function MesaModal({ abierto, mesa, modo, onGuardar, onCerrar }) {
   const [formData, setFormData] = useState({
     numero_mesa: '',
+    nombre: '',
     capacidad: 2,
     zona: ''
   });
@@ -30,12 +31,14 @@ function MesaModal({ abierto, mesa, modo, onGuardar, onCerrar }) {
       if (mesa && modo === 'editar') {
         setFormData({
           numero_mesa: mesa.numero_mesa.toString(),
+          nombre: mesa.nombre || '',
           capacidad: mesa.capacidad,
           zona: mesa.zona || ''
         });
       } else {
         setFormData({
           numero_mesa: '',
+          nombre: '',
           capacidad: 2,
           zona: ''
         });
@@ -72,6 +75,7 @@ function MesaModal({ abierto, mesa, modo, onGuardar, onCerrar }) {
     try {
       const datosMesa = {
         numero_mesa: parseInt(formData.numero_mesa),
+        nombre: formData.nombre.trim() || null,
         capacidad: parseInt(formData.capacidad),
         zona: formData.zona.trim() || null
       };
@@ -140,6 +144,25 @@ function MesaModal({ abierto, mesa, modo, onGuardar, onCerrar }) {
               {errores.numero_mesa && (
                 <p className="text-red-500 text-sm mt-1">{errores.numero_mesa}</p>
               )}
+            </div>
+
+            {/* Nombre personalizado */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                Nombre Personalizado (Opcional)
+              </label>
+              <input
+                type="text"
+                value={formData.nombre}
+                onChange={(e) => manejarCambio('nombre', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: Terraza VIP, Salón Principal, Mesa Romántica..."
+                maxLength="50"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Si no se especifica, se mostrará solo "Mesa {formData.numero_mesa || 'X'}"
+              </p>
             </div>
 
             {/* Capacidad */}

@@ -52,10 +52,17 @@ function TableCard({ mesa, onClick, onDoubleClick }) {
         }
       }}
     >
-      {/* Número de mesa */}
-      <p className="font-bold text-lg mb-2">
-        Mesa {mesa.numero_mesa}
-      </p>
+      {/* Nombre/Número de mesa */}
+      <div className="mb-2">
+        {mesa.nombre ? (
+          <>
+            <p className="font-bold text-lg">{mesa.nombre}</p>
+            <p className="text-sm text-gray-600">Mesa {mesa.numero_mesa}</p>
+          </>
+        ) : (
+          <p className="font-bold text-lg">Mesa {mesa.numero_mesa}</p>
+        )}
+      </div>
       
       {/* Capacidad */}
       <div className="flex items-center justify-center mb-2">

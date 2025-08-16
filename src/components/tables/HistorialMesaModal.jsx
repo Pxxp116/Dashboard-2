@@ -117,7 +117,7 @@ function HistorialMesaModal({ abierto, mesa, onCerrar }) {
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-xl font-bold">
-              Historial de Mesa {mesa.numero_mesa}
+              {mesa.nombre ? `${mesa.nombre} (Mesa ${mesa.numero_mesa})` : `Historial de Mesa ${mesa.numero_mesa}`}
             </h2>
             <p className="text-gray-600 text-sm">
               Capacidad: {mesa.capacidad} personas
