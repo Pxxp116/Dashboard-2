@@ -20,10 +20,10 @@ function GastroBotDashboard() {
   const { datosEspejo, actualizarDatosEspejo } = useAppContext();
   const [activeTab, setActiveTab] = useState('inicio');
   const [estadoSistema, setEstadoSistema] = useState(null);
-  const [archivoEspejo, setArchivoEspejo] = useState(null);
-  const [reservas, setReservas] = useState([]);
-  const [mesas, setMesas] = useState([]);
-  const [menu, setMenu] = useState({ categorias: [] });
+  // Obtener datos del contexto
+  const reservas = datosEspejo?.reservas || [];
+  const mesas = datosEspejo?.mesas || [];
+  const menu = datosEspejo?.menu || { categorias: [] };
   const politicas = datosEspejo?.politicas || {};
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -60,37 +60,19 @@ function GastroBotDashboard() {
     }
   }, []);
 
-  // Cargar archivo espejo
-  const cargarArchivoEspejo = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/espejo`);
-      const data = await response.json();
-      if (data.exito) {
-        setArchivoEspejo(data.datos);
-        setReservas(data.datos.reservas || []);
-        setMesas(data.datos.mesas || []);
-        setMenu(data.datos.menu || { categorias: [] });
-        // Las políticas ahora vienen del contexto
-      }
-    } catch (error) {
-      console.error('Error cargando archivo espejo:', error);
-    }
-  }, []);
 
   // Actualizar datos cada 15 segundos
   useEffect(() => {
     cargarEstadoSistema();
-    cargarArchivoEspejo();
     actualizarDatosEspejo(); // Actualizar datos del contexto
     
     const interval = setInterval(() => {
       cargarEstadoSistema();
-      cargarArchivoEspejo();
       actualizarDatosEspejo(); // Actualizar datos del contexto
     }, 15000);
     
     return () => clearInterval(interval);
-  }, [cargarEstadoSistema, cargarArchivoEspejo]);
+  }, [cargarEstadoSistema, actualizarDatosEspejo]);
 
   // Mostrar mensaje temporal
   const mostrarMensaje = (texto, tipo = 'success') => {
@@ -139,7 +121,7 @@ function GastroBotDashboard() {
             personas: 2,
             notas: ''
           });
-          cargarArchivoEspejo();
+          actualizarDatosEspejo();
         } else {
           mostrarMensaje(data.mensaje, 'error');
         }
@@ -168,7 +150,7 @@ function GastroBotDashboard() {
       
       if (data.exito) {
         mostrarMensaje(data.mensaje);
-        cargarArchivoEspejo();
+        actualizarDatosEspejo();
       } else {
         mostrarMensaje(data.mensaje, 'error');
       }
@@ -200,7 +182,7 @@ function GastroBotDashboard() {
           precio: '',
           disponible: true
         });
-        cargarArchivoEspejo();
+        actualizarDatosEspejo();
       } else {
         mostrarMensaje(data.mensaje, 'error');
       }
@@ -228,7 +210,7 @@ function GastroBotDashboard() {
         mostrarMensaje('Información actualizada correctamente');
         setModoEdicionInfo(false);
         // Actualizar el archivo espejo
-        await cargarArchivoEspejo();
+        await actualizarDatosEspejo();
       } else {
         mostrarMensaje(data.mensaje || 'Error al actualizar', 'error');
       }
@@ -253,7 +235,7 @@ function GastroBotDashboard() {
       
       if (data.exito) {
         mostrarMensaje('Disponibilidad actualizada');
-        cargarArchivoEspejo();
+        actualizarDatosEspejo();
       }
     } catch (error) {
       mostrarMensaje('Error al actualizar disponibilidad', 'error');
@@ -263,8 +245,6 @@ function GastroBotDashboard() {
   // Componente de Estado del Sistema
   const EstadoSistema = () => {
     if (!estadoSistema) return null;
-    
-    const espejoFresco = estadoSistema.espejo?.edad_segundos <= 30;
     
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -276,7 +256,7 @@ function GastroBotDashboard() {
           <button
             onClick={() => {
               cargarEstadoSistema();
-              cargarArchivoEspejo();
+              actualizarDatosEspejo();
             }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -284,24 +264,7 @@ function GastroBotDashboard() {
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`p-4 rounded-lg ${espejoFresco ? 'bg-green-50' : 'bg-red-50'}`}>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Archivo Espejo</span>
-              {espejoFresco ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-600" />
-              )}
-            </div>
-            <p className="text-2xl font-bold mt-2">
-              {estadoSistema.espejo?.edad_segundos}s
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {espejoFresco ? 'Datos frescos' : 'Actualización necesaria'}
-            </p>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-blue-50">
             <span className="text-sm text-gray-600">Reservas Hoy</span>
             <p className="text-2xl font-bold mt-2">{estadoSistema.reservas_hoy}</p>
@@ -456,38 +419,6 @@ function GastroBotDashboard() {
 
   // Removido TabPoliticas - usando PoliciesTab importado
 
-  // Componente de Archivo Espejo
-  const TabArchivoEspejo = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Archivo Espejo (Vista Técnica)</h2>
-          <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-sm ${
-              archivoEspejo?.edad_segundos <= 30
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {archivoEspejo?.edad_segundos}s de antigüedad
-            </span>
-            <button
-              onClick={cargarArchivoEspejo}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-96">
-          <pre className="text-xs font-mono">
-            {JSON.stringify(archivoEspejo, null, 2)}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -523,8 +454,7 @@ function GastroBotDashboard() {
       { id: 'reservas', icon: Calendar, label: 'Reservas' },
       { id: 'mesas', icon: Users, label: 'Mesas' },
       { id: 'menu', icon: Menu, label: 'Menú' },
-      { id: 'politicas', icon: Settings, label: 'Políticas' },
-      { id: 'espejo', icon: Eye, label: 'Archivo Espejo' }
+      { id: 'politicas', icon: Settings, label: 'Políticas' }
 
             ].map((item) => (
               <button
@@ -608,7 +538,7 @@ function GastroBotDashboard() {
                     <>
                       <button
                         onClick={() => {
-                          setInfoEditada(archivoEspejo?.restaurante || {});
+                          setInfoEditada(datosEspejo?.restaurante || {});
                           setModoEdicionInfo(false);
                         }}
                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -638,7 +568,7 @@ function GastroBotDashboard() {
                     <button
                       onClick={() => {
                         setModoEdicionInfo(true);
-                        setInfoEditada(archivoEspejo?.restaurante || {});
+                        setInfoEditada(datosEspejo?.restaurante || {});
                       }}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
@@ -668,7 +598,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.nombre || 'No especificado'}
+                          {datosEspejo?.restaurante?.nombre || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -687,7 +617,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.tipo_cocina || 'No especificado'}
+                          {datosEspejo?.restaurante?.tipo_cocina || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -706,7 +636,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.direccion || 'No especificado'}
+                          {datosEspejo?.restaurante?.direccion || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -725,7 +655,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.telefono || 'No especificado'}
+                          {datosEspejo?.restaurante?.telefono || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -744,7 +674,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.email || 'No especificado'}
+                          {datosEspejo?.restaurante?.email || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -763,7 +693,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.web || 'No especificado'}
+                          {datosEspejo?.restaurante?.web || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -793,8 +723,8 @@ function GastroBotDashboard() {
                         </div>
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.facebook ? 
-                            `facebook.com/${archivoEspejo.restaurante.facebook}` : 
+                          {datosEspejo?.restaurante?.facebook ? 
+                            `facebook.com/${datosEspejo.restaurante.facebook}` : 
                             'No especificado'}
                         </p>
                       )}
@@ -819,8 +749,8 @@ function GastroBotDashboard() {
                         </div>
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.instagram ? 
-                            `@${archivoEspejo.restaurante.instagram}` : 
+                          {datosEspejo?.restaurante?.instagram ? 
+                            `@${datosEspejo.restaurante.instagram}` : 
                             'No especificado'}
                         </p>
                       )}
@@ -845,8 +775,8 @@ function GastroBotDashboard() {
                         </div>
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.twitter ? 
-                            `@${archivoEspejo.restaurante.twitter}` : 
+                          {datosEspejo?.restaurante?.twitter ? 
+                            `@${datosEspejo.restaurante.twitter}` : 
                             'No especificado'}
                         </p>
                       )}
@@ -866,7 +796,7 @@ function GastroBotDashboard() {
                         />
                       ) : (
                         <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                          {archivoEspejo?.restaurante?.tripadvisor || 'No especificado'}
+                          {datosEspejo?.restaurante?.tripadvisor || 'No especificado'}
                         </p>
                       )}
                     </div>
@@ -886,25 +816,25 @@ function GastroBotDashboard() {
                   />
                 ) : (
                   <p className="py-3 px-3 bg-gray-50 rounded-lg">
-                    {archivoEspejo?.restaurante?.descripcion || 'No hay descripción disponible'}
+                    {datosEspejo?.restaurante?.descripcion || 'No hay descripción disponible'}
                   </p>
                 )}
               </div>
               
               {/* Vista previa */}
-              {!modoEdicionInfo && archivoEspejo?.restaurante && (
+              {!modoEdicionInfo && datosEspejo?.restaurante && (
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                   <h4 className="text-sm font-semibold text-blue-800 mb-2">
                     Vista previa en el Bot:
                   </h4>
                   <div className="text-sm text-gray-700 space-y-1">
-                    <p>📍 <strong>{archivoEspejo.restaurante.nombre}</strong></p>
-                    {archivoEspejo.restaurante.tipo_cocina && <p>🍴 {archivoEspejo.restaurante.tipo_cocina}</p>}
-                    {archivoEspejo.restaurante.direccion && <p>📍 {archivoEspejo.restaurante.direccion}</p>}
-                    {archivoEspejo.restaurante.telefono && <p>📞 {archivoEspejo.restaurante.telefono}</p>}
-                    {archivoEspejo.restaurante.email && <p>📧 {archivoEspejo.restaurante.email}</p>}
-                    {archivoEspejo.restaurante.web && <p>🌐 {archivoEspejo.restaurante.web}</p>}
-                    {archivoEspejo.restaurante.instagram && <p>📸 Instagram: @{archivoEspejo.restaurante.instagram}</p>}
+                    <p>📍 <strong>{datosEspejo.restaurante.nombre}</strong></p>
+                    {datosEspejo.restaurante.tipo_cocina && <p>🍴 {datosEspejo.restaurante.tipo_cocina}</p>}
+                    {datosEspejo.restaurante.direccion && <p>📍 {datosEspejo.restaurante.direccion}</p>}
+                    {datosEspejo.restaurante.telefono && <p>📞 {datosEspejo.restaurante.telefono}</p>}
+                    {datosEspejo.restaurante.email && <p>📧 {datosEspejo.restaurante.email}</p>}
+                    {datosEspejo.restaurante.web && <p>🌐 {datosEspejo.restaurante.web}</p>}
+                    {datosEspejo.restaurante.instagram && <p>📸 Instagram: @{datosEspejo.restaurante.instagram}</p>}
                   </div>
                 </div>
               )}
@@ -916,7 +846,6 @@ function GastroBotDashboard() {
         {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && <PoliciesTab politicas={politicas} />}
-        {activeTab === 'espejo' && <TabArchivoEspejo />}
    </main>
 
       {/* Modal Nueva Reserva */}
