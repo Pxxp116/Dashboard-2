@@ -174,6 +174,21 @@ class ApiClient {
   }
 
   /**
+   * PUT request
+   * @param {string} endpoint - Endpoint
+   * @param {any} data - Body data
+   * @returns {Promise<any>}
+   */
+  async put(endpoint, data) {
+    return this.withRetry(() =>
+      this.request(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      })
+    );
+  }
+
+  /**
    * PATCH request
    * @param {string} endpoint - Endpoint
    * @param {any} data - Body data
