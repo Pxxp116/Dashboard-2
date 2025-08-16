@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building } from 'lucide-react';
+import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building, Edit2 } from 'lucide-react';
 
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
@@ -39,6 +39,8 @@ function GastroBotDashboard() {
     precio: '',
     disponible: true
   });
+  const [modoEdicionInfo, setModoEdicionInfo] = useState(false);
+  const [infoEditada, setInfoEditada] = useState({});
 
   // Cargar estado del sistema
   const cargarEstadoSistema = useCallback(async () => {
@@ -199,6 +201,36 @@ function GastroBotDashboard() {
       mostrarMensaje('Error al crear plato', 'error');
     }
     setLoading(false);
+  };
+
+  // Guardar información del restaurante
+  const guardarInfoRestaurante = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/admin/restaurante`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(infoEditada)
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje('Información actualizada correctamente');
+        setModoEdicionInfo(false);
+        // Actualizar el archivo espejo
+        await cargarArchivoEspejo();
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al actualizar', 'error');
+      }
+    } catch (error) {
+      console.error('Error guardando información:', error);
+      mostrarMensaje('Error al guardar los cambios', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Cambiar disponibilidad de plato
@@ -604,6 +636,7 @@ function GastroBotDashboard() {
         )}
 
         {/* Contenido por Tab */}
+        {/* Contenido por Tab */}
         {activeTab === 'inicio' && (
           <div className="space-y-6">
             <EstadoSistema />
@@ -640,8 +673,53 @@ function GastroBotDashboard() {
         {activeTab === 'info' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Header con botón de editar/guardar */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold">Información General del Restaurante</h2>
+                <div className="flex space-x-2">
+                  {modoEdicionInfo ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setInfoEditada(archivoEspejo?.restaurante || {});
+                          setModoEdicionInfo(false);
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4 inline mr-2" />
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={guardarInfoRestaurante}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Guardar Cambios
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setModoEdicionInfo(true);
+                        setInfoEditada(archivoEspejo?.restaurante || {});
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4 inline mr-2" />
+                      Editar Información
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -650,76 +728,259 @@ function GastroBotDashboard() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.nombre || 'La Bona Taula'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre del Restaurante
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="text"
+                          value={infoEditada.nombre || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, nombre: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Nombre del restaurante"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.nombre || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Cocina</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.tipo_cocina || 'Mediterránea'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo de Cocina
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="text"
+                          value={infoEditada.tipo_cocina || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, tipo_cocina: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Ej: Mediterránea, Italiana, Fusión..."
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.tipo_cocina || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.direccion || 'Carrer de València 234, Barcelona'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Dirección Completa
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="text"
+                          value={infoEditada.direccion || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, direccion: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Calle, número, ciudad"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.direccion || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.telefono || '+34 932 15 47 89'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Teléfono de Contacto
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="tel"
+                          value={infoEditada.telefono || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, telefono: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="+34 900 000 000"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.telefono || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.email || 'reservas@labonataula.es'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email de Contacto
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="email"
+                          value={infoEditada.email || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, email: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="info@restaurante.com"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.email || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Web</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.web || 'www.labonataula.es'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Sitio Web Oficial
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="url"
+                          value={infoEditada.web || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, web: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="www.restaurante.com"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.web || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Redes Sociales y Descripción</h3>
+                  <h3 className="text-lg font-semibold mb-4">Redes Sociales</h3>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.facebook || 'No especificado'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Facebook
+                      </label>
+                      {modoEdicionInfo ? (
+                        <div className="flex">
+                          <span className="px-3 py-2 bg-gray-100 border border-r-0 rounded-l-lg text-gray-500">
+                            facebook.com/
+                          </span>
+                          <input
+                            type="text"
+                            value={infoEditada.facebook || ''}
+                            onChange={(e) => setInfoEditada({...infoEditada, facebook: e.target.value})}
+                            className="flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="mirestaurante"
+                          />
+                        </div>
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.facebook ? 
+                            `facebook.com/${archivoEspejo.restaurante.facebook}` : 
+                            'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
-                      <p className="py-2 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.instagram || 'No especificado'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Instagram
+                      </label>
+                      {modoEdicionInfo ? (
+                        <div className="flex">
+                          <span className="px-3 py-2 bg-gray-100 border border-r-0 rounded-l-lg text-gray-500">
+                            @
+                          </span>
+                          <input
+                            type="text"
+                            value={infoEditada.instagram || ''}
+                            onChange={(e) => setInfoEditada({...infoEditada, instagram: e.target.value})}
+                            className="flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="mirestaurante"
+                          />
+                        </div>
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.instagram ? 
+                            `@${archivoEspejo.restaurante.instagram}` : 
+                            'No especificado'}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                      <p className="py-3 px-3 bg-gray-50 rounded-lg">
-                        {archivoEspejo?.restaurante?.descripcion || 'Cocina mediterránea moderna'}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Twitter / X
+                      </label>
+                      {modoEdicionInfo ? (
+                        <div className="flex">
+                          <span className="px-3 py-2 bg-gray-100 border border-r-0 rounded-l-lg text-gray-500">
+                            @
+                          </span>
+                          <input
+                            type="text"
+                            value={infoEditada.twitter || ''}
+                            onChange={(e) => setInfoEditada({...infoEditada, twitter: e.target.value})}
+                            className="flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="mirestaurante"
+                          />
+                        </div>
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.twitter ? 
+                            `@${archivoEspejo.restaurante.twitter}` : 
+                            'No especificado'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        TripAdvisor
+                      </label>
+                      {modoEdicionInfo ? (
+                        <input
+                          type="url"
+                          value={infoEditada.tripadvisor || ''}
+                          onChange={(e) => setInfoEditada({...infoEditada, tripadvisor: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="URL del perfil en TripAdvisor"
+                        />
+                      ) : (
+                        <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                          {archivoEspejo?.restaurante?.tripadvisor || 'No especificado'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Descripción del Restaurante</h3>
+                {modoEdicionInfo ? (
+                  <textarea
+                    value={infoEditada.descripcion || ''}
+                    onChange={(e) => setInfoEditada({...infoEditada, descripcion: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="4"
+                    placeholder="Describe tu restaurante, el tipo de cocina, el ambiente..."
+                  />
+                ) : (
+                  <p className="py-3 px-3 bg-gray-50 rounded-lg">
+                    {archivoEspejo?.restaurante?.descripcion || 'No hay descripción disponible'}
+                  </p>
+                )}
+              </div>
+              
+              {/* Vista previa */}
+              {!modoEdicionInfo && archivoEspejo?.restaurante && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                    Vista previa en el Bot:
+                  </h4>
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <p>📍 <strong>{archivoEspejo.restaurante.nombre}</strong></p>
+                    {archivoEspejo.restaurante.tipo_cocina && <p>🍴 {archivoEspejo.restaurante.tipo_cocina}</p>}
+                    {archivoEspejo.restaurante.direccion && <p>📍 {archivoEspejo.restaurante.direccion}</p>}
+                    {archivoEspejo.restaurante.telefono && <p>📞 {archivoEspejo.restaurante.telefono}</p>}
+                    {archivoEspejo.restaurante.email && <p>📧 {archivoEspejo.restaurante.email}</p>}
+                    {archivoEspejo.restaurante.web && <p>🌐 {archivoEspejo.restaurante.web}</p>}
+                    {archivoEspejo.restaurante.instagram && <p>📸 Instagram: @{archivoEspejo.restaurante.instagram}</p>}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
