@@ -1,261 +1,862 @@
-/**
- * @fileoverview Componente principal del Dashboard de GastroBot
- * Orquesta todos los componentes y servicios de la aplicación
- */
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff } from 'lucide-react';
 
-import React, { useState, useEffect } from 'react';
-import { useSystemData, useReservations, useMenu, useMessage } from './hooks/useSystemData';
-import { NAVIGATION_TABS, UI_CONFIG, SYSTEM_MESSAGES, TIPOS_MENSAJE } from './services/utils/constants';
-import { DEFAULT_NUEVA_RESERVA, DEFAULT_NUEVO_PLATO } from './types';
+// Usar variable de entorno para la URL de la API
+const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
-// Componentes de UI
-import Header from './components/common/Header';
-import Navigation from './components/common/Navigation';
-import Message from './components/common/Message';
+// Log para debug (solo en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Configuración API:');
+  console.log('- API_URL:', API_URL);
+  console.log('- REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
+}
 
-// Componentes de tabs
-import InicioTab from './components/dashboard/InicioTab';
-import ReservasTab from './components/reservations/ReservasTab';
-import MesasTab from './components/tables/MesasTab';
-import MenuTab from './components/menu/MenuTab';
-import PoliticasTab from './components/policies/PoliticasTab';
-import ArchivoEspejoTab from './components/mirror/ArchivoEspejoTab';
-
-// Modales
-import ReservaModal from './components/reservations/ReservaModal';
-import PlatoModal from './components/menu/PlatoModal';
-
-/**
- * Componente principal del Dashboard
- * @returns {JSX.Element} Dashboard completo
- */
 function GastroBotDashboard() {
-  // Estado de navegación
   const [activeTab, setActiveTab] = useState('inicio');
-  
-  // Estado de modales
+  const [estadoSistema, setEstadoSistema] = useState(null);
+  const [archivoEspejo, setArchivoEspejo] = useState(null);
+  const [reservas, setReservas] = useState([]);
+  const [mesas, setMesas] = useState([]);
+  const [menu, setMenu] = useState({ categorias: [] });
+  const [politicas, setPoliticas] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState(null);
   const [modalReserva, setModalReserva] = useState(false);
   const [modalPlato, setModalPlato] = useState(false);
-  
-  // Estado de formularios
-  const [nuevaReserva, setNuevaReserva] = useState(DEFAULT_NUEVA_RESERVA);
-  const [nuevoPlato, setNuevoPlato] = useState(DEFAULT_NUEVO_PLATO);
-  
-  // Custom hooks para datos
-  const {
-    estadoSistema,
-    archivoEspejo,
-    actualizarDatos,
-    cargarArchivoEspejo
-  } = useSystemData();
-  
-  const {
-    reservas,
-    loading: loadingReservas,
-    crearReserva,
-    cancelarReserva,
-    actualizarReservas
-  } = useReservations();
-  
-  const {
-    menu,
-    loading: loadingMenu,
-    crearPlato,
-    cambiarDisponibilidadPlato,
-    actualizarMenu
-  } = useMenu();
-  
-  const { mensaje, mostrarMensaje } = useMessage(UI_CONFIG.MESSAGE_DURATION);
-  
-  // Estado derivado
-  const [mesas, setMesas] = useState([]);
-  const [politicas, setPoliticas] = useState({});
-  const loading = loadingReservas || loadingMenu;
-  
-  // Actualizar datos derivados cuando cambia el archivo espejo
+  const [nuevaReserva, setNuevaReserva] = useState({
+    nombre: '',
+    telefono: '',
+    fecha: new Date().toISOString().split('T')[0],
+    hora: '13:00',
+    personas: 2,
+    notas: ''
+  });
+  const [nuevoPlato, setNuevoPlato] = useState({
+    categoria_id: 1,
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    disponible: true
+  });
+
+  // Cargar estado del sistema
+  const cargarEstadoSistema = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/estado-sistema`);
+      const data = await response.json();
+      if (data.exito) {
+        setEstadoSistema(data.estadisticas);
+      }
+    } catch (error) {
+      console.error('Error cargando estado:', error);
+    }
+  }, []);
+
+  // Cargar archivo espejo
+  const cargarArchivoEspejo = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/espejo`);
+      const data = await response.json();
+      if (data.exito) {
+        setArchivoEspejo(data.datos);
+        setReservas(data.datos.reservas || []);
+        setMesas(data.datos.mesas || []);
+        setMenu(data.datos.menu || { categorias: [] });
+        setPoliticas(data.datos.politicas || {});
+      }
+    } catch (error) {
+      console.error('Error cargando archivo espejo:', error);
+    }
+  }, []);
+
+  // Actualizar datos cada 15 segundos
   useEffect(() => {
-    if (archivoEspejo) {
-      actualizarReservas(archivoEspejo.reservas || []);
-      setMesas(archivoEspejo.mesas || []);
-      actualizarMenu(archivoEspejo.menu || { categorias: [] });
-      setPoliticas(archivoEspejo.politicas || {});
-    }
-  }, [archivoEspejo, actualizarReservas, actualizarMenu]);
-  
-  /**
-   * Maneja la creación de una nueva reserva
-   */
-  const handleCrearReserva = async () => {
-    const resultado = await crearReserva(nuevaReserva);
+    cargarEstadoSistema();
+    cargarArchivoEspejo();
     
-    if (resultado.exito) {
-      mostrarMensaje(resultado.mensaje || SYSTEM_MESSAGES.RESERVATION_CREATED);
-      setModalReserva(false);
-      setNuevaReserva(DEFAULT_NUEVA_RESERVA);
-      await cargarArchivoEspejo();
-    } else {
-      mostrarMensaje(
-        resultado.mensaje || SYSTEM_MESSAGES.NO_TABLES_AVAILABLE,
-        TIPOS_MENSAJE.ERROR
-      );
+    const interval = setInterval(() => {
+      cargarEstadoSistema();
+      cargarArchivoEspejo();
+    }, 15000);
+    
+    return () => clearInterval(interval);
+  }, [cargarEstadoSistema, cargarArchivoEspejo]);
+
+  // Mostrar mensaje temporal
+  const mostrarMensaje = (texto, tipo = 'success') => {
+    setMensaje({ texto, tipo });
+    setTimeout(() => setMensaje(null), 3000);
+  };
+
+  // Crear nueva reserva
+  const crearReserva = async () => {
+    setLoading(true);
+    try {
+      // Primero buscar mesa disponible
+      const busquedaResponse = await fetch(`${API_URL}/buscar-mesa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fecha: nuevaReserva.fecha,
+          hora: nuevaReserva.hora,
+          personas: nuevaReserva.personas
+        })
+      });
+      
+      const busquedaData = await busquedaResponse.json();
+      
+      if (busquedaData.exito && busquedaData.mesa_disponible) {
+        // Crear la reserva con la mesa encontrada
+        const response = await fetch(`${API_URL}/crear-reserva`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...nuevaReserva,
+            mesa_id: busquedaData.mesa_disponible.id
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.exito) {
+          mostrarMensaje(data.mensaje);
+          setModalReserva(false);
+          setNuevaReserva({
+            nombre: '',
+            telefono: '',
+            fecha: new Date().toISOString().split('T')[0],
+            hora: '13:00',
+            personas: 2,
+            notas: ''
+          });
+          cargarArchivoEspejo();
+        } else {
+          mostrarMensaje(data.mensaje, 'error');
+        }
+      } else {
+        mostrarMensaje('No hay mesas disponibles para esa hora', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al crear reserva', 'error');
+    }
+    setLoading(false);
+  };
+
+  // Cancelar reserva
+  const cancelarReserva = async (id) => {
+    if (!window.confirm('¿Seguro que quieres cancelar esta reserva?')) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/cancelar-reserva/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: 'Cancelado desde dashboard' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje(data.mensaje);
+        cargarArchivoEspejo();
+      } else {
+        mostrarMensaje(data.mensaje, 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al cancelar reserva', 'error');
+    }
+    setLoading(false);
+  };
+
+  // Crear nuevo plato
+  const crearPlato = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/admin/menu/plato`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevoPlato)
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje('Plato creado correctamente');
+        setModalPlato(false);
+        setNuevoPlato({
+          categoria_id: 1,
+          nombre: '',
+          descripcion: '',
+          precio: '',
+          disponible: true
+        });
+        cargarArchivoEspejo();
+      } else {
+        mostrarMensaje(data.mensaje, 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al crear plato', 'error');
+    }
+    setLoading(false);
+  };
+
+  // Cambiar disponibilidad de plato
+  const toggleDisponibilidadPlato = async (platoId, disponibleActual) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/menu/plato/${platoId}/disponibilidad`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disponible: !disponibleActual })
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje('Disponibilidad actualizada');
+        cargarArchivoEspejo();
+      }
+    } catch (error) {
+      mostrarMensaje('Error al actualizar disponibilidad', 'error');
     }
   };
-  
-  /**
-   * Maneja la cancelación de una reserva
-   * @param {number} id - ID de la reserva
-   */
-  const handleCancelarReserva = async (id) => {
-    if (!window.confirm(SYSTEM_MESSAGES.CONFIRM_CANCEL)) return;
+
+  // Componente de Estado del Sistema
+  const EstadoSistema = () => {
+    if (!estadoSistema) return null;
     
-    const resultado = await cancelarReserva(id, 'Cancelado desde dashboard');
+    const espejoFresco = estadoSistema.espejo?.edad_segundos <= 30;
     
-    if (resultado.exito) {
-      mostrarMensaje(resultado.mensaje || SYSTEM_MESSAGES.RESERVATION_CANCELLED);
-      await cargarArchivoEspejo();
-    } else {
-      mostrarMensaje(resultado.mensaje, TIPOS_MENSAJE.ERROR);
-    }
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold flex items-center">
+            <AlertCircle className="mr-2" />
+            Estado del Sistema
+          </h2>
+          <button
+            onClick={() => {
+              cargarEstadoSistema();
+              cargarArchivoEspejo();
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`p-4 rounded-lg ${espejoFresco ? 'bg-green-50' : 'bg-red-50'}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Archivo Espejo</span>
+              {espejoFresco ? (
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              )}
+            </div>
+            <p className="text-2xl font-bold mt-2">
+              {estadoSistema.espejo?.edad_segundos}s
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {espejoFresco ? 'Datos frescos' : 'Actualización necesaria'}
+            </p>
+          </div>
+          
+          <div className="p-4 rounded-lg bg-blue-50">
+            <span className="text-sm text-gray-600">Reservas Hoy</span>
+            <p className="text-2xl font-bold mt-2">{estadoSistema.reservas_hoy}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {estadoSistema.mesas_ocupadas}/{estadoSistema.mesas_totales} mesas ocupadas
+            </p>
+          </div>
+          
+          <div className="p-4 rounded-lg bg-purple-50">
+            <span className="text-sm text-gray-600">Ocupación</span>
+            <p className="text-2xl font-bold mt-2">
+              {Math.round((estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100)}%
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all"
+                style={{ width: `${(estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
-  
-  /**
-   * Maneja la creación de un nuevo plato
-   */
-  const handleCrearPlato = async () => {
-    const resultado = await crearPlato(nuevoPlato);
-    
-    if (resultado.exito) {
-      mostrarMensaje(SYSTEM_MESSAGES.DISH_CREATED);
-      setModalPlato(false);
-      setNuevoPlato(DEFAULT_NUEVO_PLATO);
-      await cargarArchivoEspejo();
-    } else {
-      mostrarMensaje(resultado.mensaje, TIPOS_MENSAJE.ERROR);
-    }
-  };
-  
-  /**
-   * Maneja el cambio de disponibilidad de un plato
-   * @param {number} platoId - ID del plato
-   * @param {boolean} disponibleActual - Disponibilidad actual
-   */
-  const handleToggleDisponibilidadPlato = async (platoId, disponibleActual) => {
-    const resultado = await cambiarDisponibilidadPlato(platoId, !disponibleActual);
-    
-    if (resultado.exito) {
-      mostrarMensaje(SYSTEM_MESSAGES.DISH_UPDATED);
-      await cargarArchivoEspejo();
-    } else {
-      mostrarMensaje(resultado.mensaje, TIPOS_MENSAJE.ERROR);
-    }
-  };
-  
-  /**
-   * Renderiza el contenido del tab activo
-   * @returns {JSX.Element} Contenido del tab
-   */
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'inicio':
-        return (
-          <InicioTab
-            estadoSistema={estadoSistema}
-            onRefresh={actualizarDatos}
-          />
-        );
-      
-      case 'reservas':
-        return (
-          <ReservasTab
-            reservas={reservas}
-            loading={loading}
-            onNuevaReserva={() => setModalReserva(true)}
-            onCancelarReserva={handleCancelarReserva}
-          />
-        );
-      
-      case 'mesas':
-        return <MesasTab mesas={mesas} />;
-      
-      case 'menu':
-        return (
-          <MenuTab
-            menu={menu}
-            onNuevoPlato={() => setModalPlato(true)}
-            onToggleDisponibilidad={handleToggleDisponibilidadPlato}
-          />
-        );
-      
-      case 'politicas':
-        return <PoliticasTab politicas={politicas} />;
-      
-      case 'espejo':
-        return (
-          <ArchivoEspejoTab
-            archivoEspejo={archivoEspejo}
-            onRefresh={cargarArchivoEspejo}
-          />
-        );
-      
-      default:
-        return null;
-    }
-  };
-  
+
+  // Componente de Reservas
+  const TabReservas = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Reservas del Día</h2>
+          <button
+            onClick={() => setModalReserva(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Reserva
+          </button>
+        </div>
+        
+        {reservas.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No hay reservas para hoy</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Hora</th>
+                  <th className="text-left py-2">Nombre</th>
+                  <th className="text-left py-2">Personas</th>
+                  <th className="text-left py-2">Mesa</th>
+                  <th className="text-left py-2">Estado</th>
+                  <th className="text-left py-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reservas.map((reserva) => (
+                  <tr key={reserva.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3">{reserva.hora?.substring(0, 5)}</td>
+                    <td className="py-3">
+                      <div>
+                        <p className="font-medium">{reserva.nombre}</p>
+                        <p className="text-sm text-gray-500">{reserva.telefono}</p>
+                      </div>
+                    </td>
+                    <td className="py-3">{reserva.personas}</td>
+                    <td className="py-3">Mesa {reserva.mesa_id}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        reserva.estado === 'confirmada' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {reserva.estado}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <button
+                        onClick={() => cancelarReserva(reserva.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        disabled={loading}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Componente del Menú
+  const TabMenu = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Gestión del Menú</h2>
+          <button
+            onClick={() => setModalPlato(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Plato
+          </button>
+        </div>
+        
+        {menu.categorias.map((categoria) => (
+          <div key={categoria.id} className="mb-8">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">{categoria.nombre}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {categoria.platos?.map((plato) => (
+                <div key={plato.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{plato.nombre}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{plato.descripcion}</p>
+                      <div className="flex items-center mt-2">
+                        <span className="font-bold text-lg">{plato.precio}€</span>
+                        {plato.alergenos?.length > 0 && (
+                          <span className="ml-4 text-xs text-gray-500">
+                            Alérgenos: {plato.alergenos.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleDisponibilidadPlato(plato.id, plato.disponible)}
+                      className={`ml-4 p-2 rounded-lg transition-colors ${
+                        plato.disponible
+                          ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                          : 'bg-red-100 text-red-600 hover:bg-red-200'
+                      }`}
+                    >
+                      {plato.disponible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Componente de Mesas
+  const TabMesas = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold mb-6">Estado de Mesas</h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {mesas.map((mesa) => (
+            <div
+              key={mesa.id}
+              className={`p-4 rounded-lg text-center transition-all ${
+                mesa.estado === 'ocupada'
+                  ? 'bg-red-100 border-2 border-red-300'
+                  : 'bg-green-100 border-2 border-green-300'
+              }`}
+            >
+              <p className="font-bold text-lg">Mesa {mesa.numero_mesa}</p>
+              <p className="text-sm mt-1">
+                <Users className="w-4 h-4 inline mr-1" />
+                {mesa.capacidad} personas
+              </p>
+              <p className="text-xs mt-2 font-medium">
+                {mesa.estado === 'ocupada' ? 'OCUPADA' : 'LIBRE'}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Componente de Políticas
+  const TabPoliticas = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold mb-6">Políticas del Restaurante</h2>
+        
+        <div className="space-y-4">
+          <div className="flex justify-between items-center py-3 border-b">
+            <span className="font-medium">Cancelación anticipada</span>
+            <span className="text-gray-600">{politicas.cancelacion_horas || 24} horas</span>
+          </div>
+          
+          <div className="flex justify-between items-center py-3 border-b">
+            <span className="font-medium">Tiempo de mesa</span>
+            <span className="text-gray-600">{politicas.tiempo_mesa_minutos || 120} minutos</span>
+          </div>
+          
+          <div className="flex justify-between items-center py-3 border-b">
+            <span className="font-medium">Niños permitidos</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              politicas.niños_permitidos !== false
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {politicas.niños_permitidos !== false ? 'SÍ' : 'NO'}
+            </span>
+          </div>
+          
+          <div className="flex justify-between items-center py-3 border-b">
+            <span className="font-medium">Mascotas permitidas</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              politicas.mascotas_permitidas
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {politicas.mascotas_permitidas ? 'SÍ' : 'NO'}
+            </span>
+          </div>
+          
+          <div className="flex justify-between items-center py-3 border-b">
+            <span className="font-medium">Anticipo requerido</span>
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              politicas.anticipo_requerido
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {politicas.anticipo_requerido ? `SÍ - ${politicas.anticipo_cantidad}€` : 'NO'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Componente de Archivo Espejo
+  const TabArchivoEspejo = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Archivo Espejo (Vista Técnica)</h2>
+          <div className="flex items-center space-x-2">
+            <span className={`px-3 py-1 rounded-full text-sm ${
+              archivoEspejo?.edad_segundos <= 30
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {archivoEspejo?.edad_segundos}s de antigüedad
+            </span>
+            <button
+              onClick={cargarArchivoEspejo}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-96">
+          <pre className="text-xs font-mono">
+            {JSON.stringify(archivoEspejo, null, 2)}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <Header />
-      
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Coffee className="w-8 h-8 text-blue-600 mr-3" />
+              <h1 className="text-xl font-bold text-gray-900">GastroBot Dashboard</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">
+                {new Date().toLocaleDateString('es-ES', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Navigation */}
-      <Navigation
-        tabs={NAVIGATION_TABS}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-      
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            {[
+              { id: 'inicio', icon: Home, label: 'Inicio' },
+              { id: 'reservas', icon: Calendar, label: 'Reservas' },
+              { id: 'mesas', icon: Users, label: 'Mesas' },
+              { id: 'menu', icon: Menu, label: 'Menú' },
+              { id: 'politicas', icon: Settings, label: 'Políticas' },
+              { id: 'espejo', icon: Eye, label: 'Archivo Espejo' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === item.id
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <item.icon className="w-4 h-4 mr-2" />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Mensajes */}
         {mensaje && (
-          <Message
-            texto={mensaje.texto}
-            tipo={mensaje.tipo}
-            onClose={() => mostrarMensaje(null)}
-          />
+          <div className={`mb-4 p-4 rounded-lg flex items-center ${
+            mensaje.tipo === 'success' 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {mensaje.tipo === 'success' ? (
+              <CheckCircle className="w-5 h-5 mr-2" />
+            ) : (
+              <AlertCircle className="w-5 h-5 mr-2" />
+            )}
+            {mensaje.texto}
+          </div>
         )}
-        
-        {/* Contenido del Tab Activo */}
-        {renderTabContent()}
+
+        {/* Contenido por Tab */}
+        {activeTab === 'inicio' && (
+          <div className="space-y-6">
+            <EstadoSistema />
+            
+            {/* Próximas Reservas */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Próximas Reservas</h2>
+              {estadoSistema?.proximas_reservas?.length > 0 ? (
+                <div className="space-y-3">
+                  {estadoSistema.proximas_reservas.map((reserva, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-3 text-gray-500" />
+                        <div>
+                          <p className="font-medium">{reserva.nombre}</p>
+                          <p className="text-sm text-gray-500">
+                            {reserva.fecha} - {reserva.hora?.substring(0, 5)} - {reserva.personas} personas
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-blue-600">
+                        Mesa {reserva.mesa_id}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No hay reservas próximas</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reservas' && <TabReservas />}
+        {activeTab === 'mesas' && <TabMesas />}
+        {activeTab === 'menu' && <TabMenu />}
+        {activeTab === 'politicas' && <TabPoliticas />}
+        {activeTab === 'espejo' && <TabArchivoEspejo />}
       </main>
-      
+
       {/* Modal Nueva Reserva */}
       {modalReserva && (
-        <ReservaModal
-          reserva={nuevaReserva}
-          onChange={setNuevaReserva}
-          onConfirm={handleCrearReserva}
-          onCancel={() => {
-            setModalReserva(false);
-            setNuevaReserva(DEFAULT_NUEVA_RESERVA);
-          }}
-          loading={loading}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Nueva Reserva</h3>
+              <button
+                onClick={() => setModalReserva(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={nuevaReserva.nombre}
+                  onChange={(e) => setNuevaReserva({...nuevaReserva, nombre: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Teléfono</label>
+                <input
+                  type="tel"
+                  value={nuevaReserva.telefono}
+                  onChange={(e) => setNuevaReserva({...nuevaReserva, telefono: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="+34 600 000 000"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fecha</label>
+                  <input
+                    type="date"
+                    value={nuevaReserva.fecha}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, fecha: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hora</label>
+                  <input
+                    type="time"
+                    value={nuevaReserva.hora}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, hora: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Personas</label>
+                <select
+                  value={nuevaReserva.personas}
+                  onChange={(e) => setNuevaReserva({...nuevaReserva, personas: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <option key={n} value={n}>{n} {n === 1 ? 'persona' : 'personas'}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Notas (opcional)</label>
+                <textarea
+                  value={nuevaReserva.notas}
+                  onChange={(e) => setNuevaReserva({...nuevaReserva, notas: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                  placeholder="Alergias, celebraciones, preferencias..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setModalReserva(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={crearReserva}
+                disabled={loading || !nuevaReserva.nombre || !nuevaReserva.telefono}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Crear Reserva
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      
+
       {/* Modal Nuevo Plato */}
       {modalPlato && (
-        <PlatoModal
-          plato={nuevoPlato}
-          categorias={menu.categorias}
-          onChange={setNuevoPlato}
-          onConfirm={handleCrearPlato}
-          onCancel={() => {
-            setModalPlato(false);
-            setNuevoPlato(DEFAULT_NUEVO_PLATO);
-          }}
-          loading={loading}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Nuevo Plato</h3>
+              <button
+                onClick={() => setModalPlato(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Categoría</label>
+                <select
+                  value={nuevoPlato.categoria_id}
+                  onChange={(e) => setNuevoPlato({...nuevoPlato, categoria_id: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {menu.categorias.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre del Plato</label>
+                <input
+                  type="text"
+                  value={nuevoPlato.nombre}
+                  onChange={(e) => setNuevoPlato({...nuevoPlato, nombre: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Ej: Paella Valenciana"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Descripción</label>
+                <textarea
+                  value={nuevoPlato.descripcion}
+                  onChange={(e) => setNuevoPlato({...nuevoPlato, descripcion: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  rows="3"
+                  placeholder="Descripción breve del plato..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Precio (€)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={nuevoPlato.precio}
+                  onChange={(e) => setNuevoPlato({...nuevoPlato, precio: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="12.50"
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="disponible"
+                  checked={nuevoPlato.disponible}
+                  onChange={(e) => setNuevoPlato({...nuevoPlato, disponible: e.target.checked})}
+                  className="mr-2"
+                />
+                <label htmlFor="disponible" className="text-sm font-medium">
+                  Disponible inmediatamente
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setModalPlato(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={crearPlato}
+                disabled={loading || !nuevoPlato.nombre || !nuevoPlato.precio}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Crear Plato
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
