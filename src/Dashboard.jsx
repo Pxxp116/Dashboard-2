@@ -4,6 +4,7 @@ import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, Refre
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
 import PoliciesTab from './components/policies/PoliciesTab';
+import MenuTab from './components/menu/MenuTab';
 import { useAppContext } from './context/AppContext';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
@@ -913,7 +914,7 @@ function GastroBotDashboard() {
 
         {activeTab === 'reservas' && <TabReservas />}
         {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
-        {activeTab === 'menu' && <TabMenu />}
+        {activeTab === 'menu' && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && <PoliciesTab politicas={politicas} />}
         {activeTab === 'espejo' && <TabArchivoEspejo />}
    </main>

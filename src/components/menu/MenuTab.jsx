@@ -6,18 +6,25 @@
 import React, { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import MenuCategory from './MenuCategory';
+import PlatoModal from './PlatoModal';
+import { useAppContext } from '../../context/AppContext';
+import { useMessage } from '../../hooks/useMessage';
 
 /**
  * Tab de gestión del menú
  * @param {Object} props - Props del componente
  * @param {Object} props.menu - Datos del menú
- * @param {Function} props.onNuevoPlato - Callback para nuevo plato
- * @param {Function} props.onToggleDisponibilidad - Callback para cambiar disponibilidad
  * @returns {JSX.Element} Componente MenuTab
  */
-function MenuTab({ menu, onNuevoPlato, onToggleDisponibilidad }) {
+function MenuTab({ menu }) {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaExpandida, setCategoriaExpandida] = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modoModal, setModoModal] = useState('crear');
+  const [platoSeleccionado, setPlatoSeleccionado] = useState(null);
+  
+  const { actualizarDatosEspejo } = useAppContext();
+  const { mostrarMensaje } = useMessage();
 
   /**
    * Filtra los platos según la búsqueda
@@ -74,6 +81,93 @@ function MenuTab({ menu, onNuevoPlato, onToggleDisponibilidad }) {
     setCategoriaExpandida(prev => prev === categoriaId ? null : categoriaId);
   };
 
+  /**
+   * Abre el modal para crear un nuevo plato
+   */
+  const abrirModalCrear = () => {
+    setModoModal('crear');
+    setPlatoSeleccionado(null);
+    setModalAbierto(true);
+  };
+
+  /**
+   * Abre el modal para editar un plato
+   * @param {Object} plato - Plato a editar
+   */
+  const abrirModalEditar = (plato) => {
+    setModoModal('editar');
+    setPlatoSeleccionado(plato);
+    setModalAbierto(true);
+  };
+
+  /**
+   * Elimina un plato
+   * @param {number} platoId - ID del plato a eliminar
+   */
+  const eliminarPlato = async (platoId) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este plato?')) {
+      return;
+    }
+
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const response = await fetch(`${API_URL}/admin/menu/plato/${platoId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.exito) {
+        mostrarMensaje('Plato eliminado correctamente', 'success');
+        await actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al eliminar plato', 'error');
+      }
+    } catch (error) {
+      console.error('Error eliminando plato:', error);
+      mostrarMensaje('Error al eliminar plato: ' + error.message, 'error');
+    }
+  };
+
+  /**
+   * Cambia la disponibilidad de un plato
+   * @param {number} platoId - ID del plato
+   * @param {boolean} disponibleActual - Estado actual de disponibilidad
+   */
+  const toggleDisponibilidad = async (platoId, disponibleActual) => {
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const response = await fetch(`${API_URL}/admin/menu/plato/${platoId}/disponibilidad`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disponible: !disponibleActual })
+      });
+
+      const data = await response.json();
+
+      if (data.exito) {
+        mostrarMensaje(
+          `Plato marcado como ${!disponibleActual ? 'disponible' : 'no disponible'}`,
+          'success'
+        );
+        await actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al cambiar disponibilidad', 'error');
+      }
+    } catch (error) {
+      console.error('Error cambiando disponibilidad:', error);
+      mostrarMensaje('Error al cambiar disponibilidad: ' + error.message, 'error');
+    }
+  };
+
+  /**
+   * Maneja el guardado del modal
+   */
+  const manejarGuardadoModal = async () => {
+    await actualizarDatosEspejo();
+    setModalAbierto(false);
+  };
+
   const stats = calcularEstadisticas();
 
   return (
@@ -110,7 +204,7 @@ function MenuTab({ menu, onNuevoPlato, onToggleDisponibilidad }) {
             
             {/* Botón nuevo plato */}
             <button
-              onClick={onNuevoPlato}
+              onClick={abrirModalCrear}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -133,7 +227,9 @@ function MenuTab({ menu, onNuevoPlato, onToggleDisponibilidad }) {
                   ...categoria,
                   platos: filtrarPlatos(categoria.platos || [])
                 }}
-                onToggleDisponibilidad={onToggleDisponibilidad}
+                onToggleDisponibilidad={toggleDisponibilidad}
+                onEditarPlato={abrirModalEditar}
+                onEliminarPlato={eliminarPlato}
                 expandida={categoriaExpandida === categoria.id}
                 onToggleExpand={() => toggleCategoria(categoria.id)}
                 mostrarVacio={!busqueda}
@@ -142,6 +238,16 @@ function MenuTab({ menu, onNuevoPlato, onToggleDisponibilidad }) {
           </div>
         )}
       </div>
+
+      {/* Modal de plato */}
+      <PlatoModal
+        abierto={modalAbierto}
+        modo={modoModal}
+        plato={platoSeleccionado}
+        categorias={menu.categorias || []}
+        onCerrar={() => setModalAbierto(false)}
+        onGuardar={manejarGuardadoModal}
+      />
     </div>
   );
 }

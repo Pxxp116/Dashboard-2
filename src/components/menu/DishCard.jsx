@@ -4,16 +4,18 @@
  */
 
 import React from 'react';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Edit2, Trash2 } from 'lucide-react';
 
 /**
  * Tarjeta de plato individual
  * @param {Object} props - Props del componente
  * @param {Object} props.plato - Datos del plato
  * @param {Function} props.onToggleDisponibilidad - Callback para cambiar disponibilidad
+ * @param {Function} props.onEditar - Callback para editar plato
+ * @param {Function} props.onEliminar - Callback para eliminar plato
  * @returns {JSX.Element} Componente DishCard
  */
-function DishCard({ plato, onToggleDisponibilidad }) {
+function DishCard({ plato, onToggleDisponibilidad, onEditar, onEliminar }) {
   /**
    * Formatea el precio con el símbolo de euro
    * @param {number|string} precio - Precio del plato
@@ -104,22 +106,43 @@ function DishCard({ plato, onToggleDisponibilidad }) {
           )}
         </div>
         
-        {/* Botón de disponibilidad */}
-        <button
-          onClick={() => onToggleDisponibilidad(plato.id, plato.disponible)}
-          className={`ml-4 p-2 rounded-lg transition-colors ${
-            plato.disponible
-              ? 'bg-green-100 text-green-600 hover:bg-green-200'
-              : 'bg-red-100 text-red-600 hover:bg-red-200'
-          }`}
-          title={plato.disponible ? 'Marcar como no disponible' : 'Marcar como disponible'}
-        >
-          {plato.disponible ? (
-            <Eye className="w-4 h-4" />
-          ) : (
-            <EyeOff className="w-4 h-4" />
-          )}
-        </button>
+        {/* Botones de acción */}
+        <div className="ml-4 flex flex-col space-y-2">
+          {/* Botón de disponibilidad */}
+          <button
+            onClick={() => onToggleDisponibilidad(plato.id, plato.disponible)}
+            className={`p-2 rounded-lg transition-colors ${
+              plato.disponible
+                ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                : 'bg-red-100 text-red-600 hover:bg-red-200'
+            }`}
+            title={plato.disponible ? 'Marcar como no disponible' : 'Marcar como disponible'}
+          >
+            {plato.disponible ? (
+              <Eye className="w-4 h-4" />
+            ) : (
+              <EyeOff className="w-4 h-4" />
+            )}
+          </button>
+          
+          {/* Botón de editar */}
+          <button
+            onClick={() => onEditar(plato)}
+            className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors"
+            title="Editar plato"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          
+          {/* Botón de eliminar */}
+          <button
+            onClick={() => onEliminar(plato.id)}
+            className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors"
+            title="Eliminar plato"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

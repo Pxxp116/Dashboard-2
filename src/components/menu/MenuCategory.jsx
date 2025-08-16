@@ -12,6 +12,8 @@ import DishCard from './DishCard';
  * @param {Object} props - Props del componente
  * @param {Object} props.categoria - Datos de la categoría
  * @param {Function} props.onToggleDisponibilidad - Callback para cambiar disponibilidad
+ * @param {Function} props.onEditarPlato - Callback para editar plato
+ * @param {Function} props.onEliminarPlato - Callback para eliminar plato
  * @param {boolean} props.expandida - Si la categoría está expandida
  * @param {Function} props.onToggleExpand - Callback para expandir/contraer
  * @param {boolean} props.mostrarVacio - Si mostrar cuando no hay platos
@@ -20,6 +22,8 @@ import DishCard from './DishCard';
 function MenuCategory({ 
   categoria, 
   onToggleDisponibilidad, 
+  onEditarPlato,
+  onEliminarPlato,
   expandida, 
   onToggleExpand,
   mostrarVacio = true 
@@ -80,6 +84,8 @@ function MenuCategory({
                   key={plato.id}
                   plato={plato}
                   onToggleDisponibilidad={onToggleDisponibilidad}
+                  onEditar={onEditarPlato}
+                  onEliminar={onEliminarPlato}
                 />
               ))}
             </div>

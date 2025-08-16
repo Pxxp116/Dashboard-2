@@ -3,23 +3,45 @@
  * Gestiona el formulario de platos con validación
  */
 
-import React, { useState } from 'react';
-import { X, Save, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, RefreshCw, Plus, Trash2, Upload, Image } from 'lucide-react';
 import { VALIDATION_RULES } from '../../services/utils/constants';
+import { useMessage } from '../../hooks/useMessage';
+import { useAppContext } from '../../context/AppContext';
 
 /**
  * Modal para gestionar platos
  * @param {Object} props - Props del componente
- * @param {Object} props.plato - Datos del plato
+ * @param {boolean} props.abierto - Si el modal está abierto
+ * @param {string} props.modo - Modo del modal ('crear' o 'editar')
+ * @param {Object} props.plato - Datos del plato (para editar)
  * @param {Array} props.categorias - Lista de categorías
- * @param {Function} props.onChange - Callback al cambiar campos
- * @param {Function} props.onConfirm - Callback al confirmar
- * @param {Function} props.onCancel - Callback al cancelar
- * @param {boolean} props.loading - Estado de carga
+ * @param {Function} props.onCerrar - Callback al cerrar
+ * @param {Function} props.onGuardar - Callback al guardar
  * @returns {JSX.Element} Componente PlatoModal
  */
-function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading }) {
+function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGuardar }) {
+  const [formData, setFormData] = useState({
+    categoria_id: categorias[0]?.id || 1,
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    imagen_url: '',
+    alergenos: [],
+    disponible: true,
+    vegetariano: false,
+    vegano: false,
+    sin_gluten: false,
+    picante: false,
+    recomendado: false
+  });
   const [alergenoNuevo, setAlergenoNuevo] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const fileInputRef = useRef(null);
+  
+  const { actualizarDatosEspejo } = useAppContext();
+  const { mostrarMensaje } = useMessage();
   
   // Lista de alérgenos comunes
   const alergenosComunes = [
@@ -28,21 +50,59 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
     'Sulfitos', 'Moluscos', 'Altramuces', 'Cacahuetes'
   ];
 
+  // Inicializar formulario cuando cambie el modo o plato
+  useEffect(() => {
+    if (abierto) {
+      if (modo === 'editar' && plato) {
+        setFormData({
+          categoria_id: plato.categoria_id || categorias[0]?.id || 1,
+          nombre: plato.nombre || '',
+          descripcion: plato.descripcion || '',
+          precio: plato.precio || '',
+          imagen_url: plato.imagen_url || '',
+          alergenos: plato.alergenos || [],
+          disponible: plato.disponible !== false,
+          vegetariano: plato.vegetariano || false,
+          vegano: plato.vegano || false,
+          sin_gluten: plato.sin_gluten || false,
+          picante: plato.picante || false,
+          recomendado: plato.recomendado || false
+        });
+      } else {
+        setFormData({
+          categoria_id: categorias[0]?.id || 1,
+          nombre: '',
+          descripcion: '',
+          precio: '',
+          imagen_url: '',
+          alergenos: [],
+          disponible: true,
+          vegetariano: false,
+          vegano: false,
+          sin_gluten: false,
+          picante: false,
+          recomendado: false
+        });
+      }
+      setAlergenoNuevo('');
+    }
+  }, [abierto, modo, plato, categorias]);
+
   /**
    * Maneja el cambio de un campo
    * @param {string} campo - Nombre del campo
    * @param {any} valor - Nuevo valor
    */
   const handleChange = (campo, valor) => {
-    onChange({ ...plato, [campo]: valor });
+    setFormData(prev => ({ ...prev, [campo]: valor }));
   };
 
   /**
    * Añade un alérgeno a la lista
    */
   const añadirAlergeno = () => {
-    if (alergenoNuevo && !plato.alergenos?.includes(alergenoNuevo)) {
-      handleChange('alergenos', [...(plato.alergenos || []), alergenoNuevo]);
+    if (alergenoNuevo && !formData.alergenos?.includes(alergenoNuevo)) {
+      handleChange('alergenos', [...(formData.alergenos || []), alergenoNuevo]);
       setAlergenoNuevo('');
     }
   };
@@ -52,8 +112,109 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
    * @param {number} index - Índice del alérgeno
    */
   const eliminarAlergeno = (index) => {
-    const nuevosAlergenos = plato.alergenos.filter((_, i) => i !== index);
+    const nuevosAlergenos = formData.alergenos.filter((_, i) => i !== index);
     handleChange('alergenos', nuevosAlergenos);
+  };
+
+  /**
+   * Sube imagen del plato
+   * @param {File} file - Archivo de imagen
+   */
+  const subirImagen = async (file) => {
+    if (!file) return;
+    
+    setSubiendoImagen(true);
+    try {
+      const formDataImg = new FormData();
+      formDataImg.append('imagen', file);
+      
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const response = await fetch(`${API_URL}/admin/menu/plato/imagen`, {
+        method: 'POST',
+        body: formDataImg
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        handleChange('imagen_url', data.imagen_url);
+        mostrarMensaje('Imagen subida correctamente', 'success');
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al subir imagen', 'error');
+      }
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      mostrarMensaje('Error al subir imagen: ' + error.message, 'error');
+    } finally {
+      setSubiendoImagen(false);
+    }
+  };
+
+  /**
+   * Maneja la selección de archivo
+   * @param {Event} e - Evento de cambio
+   */
+  const manejarArchivoSeleccionado = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        mostrarMensaje('Por favor selecciona un archivo de imagen válido', 'error');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        mostrarMensaje('La imagen debe ser menor a 5MB', 'error');
+        return;
+      }
+      
+      subirImagen(file);
+    }
+  };
+
+  /**
+   * Guarda el plato
+   */
+  const guardarPlato = async () => {
+    if (!esFormularioValido()) {
+      mostrarMensaje('Por favor completa todos los campos requeridos', 'error');
+      return;
+    }
+    
+    setGuardando(true);
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const url = modo === 'crear' 
+        ? `${API_URL}/admin/menu/plato`
+        : `${API_URL}/admin/menu/plato/${plato.id}`;
+      
+      const method = modo === 'crear' ? 'POST' : 'PUT';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje(
+          `Plato ${modo === 'crear' ? 'creado' : 'actualizado'} correctamente`, 
+          'success'
+        );
+        await actualizarDatosEspejo();
+        if (onGuardar) onGuardar();
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al guardar plato', 'error');
+      }
+    } catch (error) {
+      console.error('Error guardando plato:', error);
+      mostrarMensaje('Error al guardar plato: ' + error.message, 'error');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   /**
@@ -61,24 +222,28 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
    * @returns {boolean} True si es válido
    */
   const esFormularioValido = () => {
-    const precio = parseFloat(plato.precio);
+    const precio = parseFloat(formData.precio);
     return (
-      plato.nombre?.trim().length > 0 &&
-      plato.descripcion?.trim().length > 0 &&
+      formData.nombre?.trim().length > 0 &&
+      formData.descripcion?.trim().length > 0 &&
       !isNaN(precio) &&
       precio >= VALIDATION_RULES.MIN_PRICE &&
       precio <= VALIDATION_RULES.MAX_PRICE
     );
   };
 
+  if (!abierto) return null;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Nuevo Plato</h3>
+          <h3 className="text-lg font-bold">
+            {modo === 'crear' ? 'Nuevo Plato' : 'Editar Plato'}
+          </h3>
           <button
-            onClick={onCancel}
+            onClick={onCerrar}
             className="p-1 hover:bg-gray-100 rounded"
             aria-label="Cerrar modal"
           >
@@ -94,7 +259,7 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
               Categoría <span className="text-red-500">*</span>
             </label>
             <select
-              value={plato.categoria_id}
+              value={formData.categoria_id}
               onChange={(e) => handleChange('categoria_id', parseInt(e.target.value))}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
@@ -111,7 +276,7 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
             </label>
             <input
               type="text"
-              value={plato.nombre}
+              value={formData.nombre}
               onChange={(e) => handleChange('nombre', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="Ej: Paella Valenciana"
@@ -125,7 +290,7 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
               Descripción <span className="text-red-500">*</span>
             </label>
             <textarea
-              value={plato.descripcion}
+              value={formData.descripcion}
               onChange={(e) => handleChange('descripcion', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               rows="3"
@@ -144,7 +309,7 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
               step="0.01"
               min={VALIDATION_RULES.MIN_PRICE}
               max={VALIDATION_RULES.MAX_PRICE}
-              value={plato.precio}
+              value={formData.precio}
               onChange={(e) => handleChange('precio', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="12.50"
@@ -155,6 +320,119 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
             </p>
           </div>
           
+          {/* Imagen del plato */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Imagen del plato
+            </label>
+            
+            {/* Vista previa de imagen */}
+            {formData.imagen_url && (
+              <div className="mb-3">
+                <img
+                  src={formData.imagen_url}
+                  alt="Vista previa"
+                  className="w-full h-32 object-cover rounded-lg border"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Subida de imagen */}
+            <div className="flex items-center space-x-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={manejarArchivoSeleccionado}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={subiendoImagen}
+                className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {subiendoImagen ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 mr-2" />
+                )}
+                {subiendoImagen ? 'Subiendo...' : 'Subir imagen'}
+              </button>
+              
+              {formData.imagen_url && (
+                <button
+                  type="button"
+                  onClick={() => handleChange('imagen_url', '')}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Eliminar imagen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Formatos soportados: JPG, PNG, WebP. Máximo 5MB.
+            </p>
+          </div>
+
+          {/* Características del plato */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Características
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.vegetariano}
+                  onChange={(e) => handleChange('vegetariano', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm">Vegetariano</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.vegano}
+                  onChange={(e) => handleChange('vegano', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm">Vegano</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.sin_gluten}
+                  onChange={(e) => handleChange('sin_gluten', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm">Sin gluten</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.picante}
+                  onChange={(e) => handleChange('picante', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm">Picante</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.recomendado}
+                  onChange={(e) => handleChange('recomendado', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm">Recomendado</span>
+              </label>
+            </div>
+          </div>
+
           {/* Alérgenos */}
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -162,9 +440,9 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
             </label>
             
             {/* Lista de alérgenos actuales */}
-            {plato.alergenos?.length > 0 && (
+            {formData.alergenos?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
-                {plato.alergenos.map((alergeno, idx) => (
+                {formData.alergenos.map((alergeno, idx) => (
                   <span 
                     key={idx}
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800"
@@ -210,7 +488,7 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
             <input
               type="checkbox"
               id="disponible"
-              checked={plato.disponible}
+              checked={formData.disponible}
               onChange={(e) => handleChange('disponible', e.target.checked)}
               className="mr-2"
             />
@@ -223,26 +501,26 @@ function PlatoModal({ plato, categorias, onChange, onConfirm, onCancel, loading 
         {/* Acciones */}
         <div className="flex justify-end space-x-3 mt-6">
           <button
-            onClick={onCancel}
+            onClick={onCerrar}
             className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            disabled={loading}
+            disabled={guardando}
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
-            disabled={loading || !esFormularioValido()}
+            onClick={guardarPlato}
+            disabled={guardando || !esFormularioValido()}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            {loading ? (
+            {guardando ? (
               <>
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Creando...
+                {modo === 'crear' ? 'Creando...' : 'Guardando...'}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Crear Plato
+                {modo === 'crear' ? 'Crear Plato' : 'Guardar Cambios'}
               </>
             )}
           </button>
