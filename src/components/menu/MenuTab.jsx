@@ -105,18 +105,11 @@ function MenuTab({ menu }) {
    * @param {number} platoId - ID del plato a eliminar
    */
   const eliminarPlato = async (platoId) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este plato? (Modo demo)')) {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este plato?')) {
       return;
     }
 
     try {
-      // Simulamos la eliminación mientras se implementan los endpoints del backend
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simula delay de red
-      
-      mostrarMensaje('Plato eliminado correctamente (modo demo)', 'success');
-      
-      // TODO: Implementar cuando los endpoints estén disponibles
-      /*
       const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       const response = await fetch(`${API_URL}/admin/menu/plato/${platoId}`, {
         method: 'DELETE'
@@ -134,7 +127,6 @@ function MenuTab({ menu }) {
       } else {
         mostrarMensaje(data.mensaje || 'Error al eliminar plato', 'error');
       }
-      */
     } catch (error) {
       console.error('Error eliminando plato:', error);
       mostrarMensaje('Error al eliminar plato: ' + error.message, 'error');
@@ -148,16 +140,6 @@ function MenuTab({ menu }) {
    */
   const toggleDisponibilidad = async (platoId, disponibleActual) => {
     try {
-      // Simulamos el cambio de disponibilidad mientras se implementan los endpoints del backend
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simula delay de red
-      
-      mostrarMensaje(
-        `Plato marcado como ${!disponibleActual ? 'disponible' : 'no disponible'} (modo demo)`,
-        'success'
-      );
-      
-      // TODO: Implementar cuando los endpoints estén disponibles
-      /*
       const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       const response = await fetch(`${API_URL}/admin/menu/plato/${platoId}/disponibilidad`, {
         method: 'PUT',
@@ -180,7 +162,6 @@ function MenuTab({ menu }) {
       } else {
         mostrarMensaje(data.mensaje || 'Error al cambiar disponibilidad', 'error');
       }
-      */
     } catch (error) {
       console.error('Error cambiando disponibilidad:', error);
       mostrarMensaje('Error al cambiar disponibilidad: ' + error.message, 'error');

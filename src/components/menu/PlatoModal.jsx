@@ -125,14 +125,14 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
     
     setSubiendoImagen(true);
     try {
-      // Por ahora, crear una URL temporal para mostrar la imagen
-      // mientras se implementa el endpoint de subida en el backend
+      // Crear una URL temporal para vista previa inmediata
       const imageURL = URL.createObjectURL(file);
       handleChange('imagen_url', imageURL);
       
-      mostrarMensaje('Imagen cargada temporalmente. Funcionalidad de subida en desarrollo.', 'info');
+      // Por ahora usar URL temporal - en el futuro implementar subida real
+      mostrarMensaje('Imagen cargada localmente. Para subida permanente, usar el campo URL.', 'info');
       
-      // TODO: Implementar subida real cuando el endpoint esté disponible
+      // TODO: Implementar subida de archivos con multer en el backend
       /*
       const formDataImg = new FormData();
       formDataImg.append('imagen', file);
@@ -157,7 +157,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       }
       */
     } catch (error) {
-      console.error('Error subiendo imagen:', error);
+      console.error('Error procesando imagen:', error);
       mostrarMensaje('Error al procesar imagen: ' + error.message, 'error');
     } finally {
       setSubiendoImagen(false);
@@ -198,19 +198,6 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
     
     setGuardando(true);
     try {
-      // Simulamos el guardado mientras se implementan los endpoints del backend
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simula delay de red
-      
-      mostrarMensaje(
-        `Plato ${modo === 'crear' ? 'creado' : 'actualizado'} correctamente (modo demo)`, 
-        'success'
-      );
-      
-      // Simulamos la actualización de datos
-      if (onGuardar) onGuardar();
-      
-      // TODO: Implementar cuando los endpoints estén disponibles
-      /*
       const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       const url = modo === 'crear' 
         ? `${API_URL}/admin/menu/plato`
@@ -240,7 +227,6 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       } else {
         mostrarMensaje(data.mensaje || 'Error al guardar plato', 'error');
       }
-      */
     } catch (error) {
       console.error('Error guardando plato:', error);
       mostrarMensaje('Error al guardar plato: ' + error.message, 'error');
@@ -275,8 +261,8 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
             <h3 className="text-lg font-bold">
               {modo === 'crear' ? 'Nuevo Plato' : 'Editar Plato'}
             </h3>
-            <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mt-1">
-              Modo demo - Los cambios se simulan hasta que los endpoints estén disponibles
+            <p className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded mt-1">
+              Los cambios se guardarán en la base de datos y se sincronizarán con el GPT
             </p>
           </div>
           <button
