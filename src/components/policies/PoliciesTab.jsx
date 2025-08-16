@@ -3,8 +3,11 @@
  * Muestra y permite editar las políticas y reglas del negocio
  */
 
-import React from 'react';
-import { Clock, Users, Baby, PawPrint, CreditCard, Calendar, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Users, Baby, PawPrint, CreditCard, Calendar, AlertCircle, Edit2 } from 'lucide-react';
+import PoliticasModal from './PoliticasModal';
+import { useAppContext } from '../../context/AppContext';
+import { useMessage } from '../../hooks/useMessage';
 
 /**
  * Tab de políticas del restaurante
@@ -13,6 +16,9 @@ import { Clock, Users, Baby, PawPrint, CreditCard, Calendar, AlertCircle } from 
  * @returns {JSX.Element} Componente PoliciesTab
  */
 function PoliciesTab({ politicas }) {
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const { actualizarDatosEspejo } = useAppContext();
+  const { mostrarMensaje } = useMessage();
   /**
    * Renderiza una fila de política
    * @param {Object} config - Configuración de la política
@@ -102,9 +108,18 @@ function PoliciesTab({ politicas }) {
     <div className="space-y-6">
       {/* Políticas principales */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center mb-6">
-          <AlertCircle className="w-6 h-6 mr-2 text-blue-600" />
-          <h2 className="text-xl font-bold">Políticas del Restaurante</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="w-6 h-6 mr-2 text-blue-600" />
+            <h2 className="text-xl font-bold">Políticas del Restaurante</h2>
+          </div>
+          <button
+            onClick={() => setModalAbierto(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Edit2 className="w-4 h-4" />
+            <span>Editar Políticas</span>
+          </button>
         </div>
         
         <div className="divide-y">
@@ -154,6 +169,18 @@ function PoliciesTab({ politicas }) {
           </ul>
         </div>
       )}
+
+      {/* Modal de edición */}
+      <PoliticasModal
+        abierto={modalAbierto}
+        politicas={politicas}
+        onCerrar={() => setModalAbierto(false)}
+        onGuardar={async () => {
+          mostrarMensaje('Políticas actualizadas correctamente', 'success');
+          await actualizarDatosEspejo();
+          setModalAbierto(false);
+        }}
+      />
     </div>
   );
 }

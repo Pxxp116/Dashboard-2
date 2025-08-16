@@ -67,7 +67,7 @@ class SystemService {
    */
   async actualizarPoliticas(politicas) {
     try {
-      const response = await apiClient.patch('/admin/politicas', politicas);
+      const response = await apiClient.put('/admin/politicas', politicas);
       return response;
     } catch (error) {
       console.error('Error actualizando políticas:', error);
