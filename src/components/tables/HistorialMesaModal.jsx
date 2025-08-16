@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Calendar, User, Phone, MessageSquare } from 'lucide-react';
+import { X, Clock, Calendar, User, Phone, MessageSquare, Plus } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { ESTADOS_RESERVA } from '../../types';
+import NuevaReservaModal from './NuevaReservaModal';
 
 /**
  * Modal de historial de mesa
@@ -20,6 +21,7 @@ function HistorialMesaModal({ abierto, mesa, onCerrar }) {
   const [historialReservas, setHistorialReservas] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('todas');
+  const [modalNuevaReserva, setModalNuevaReserva] = useState(false);
   
   const { datosEspejo } = useAppContext();
 
@@ -141,6 +143,14 @@ function HistorialMesaModal({ abierto, mesa, onCerrar }) {
               </p>
             </div>
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setModalNuevaReserva(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nueva Reserva</span>
+              </button>
+              <div className="border-l border-gray-300 h-6"></div>
               <label className="text-sm font-medium text-gray-700">
                 Filtrar por estado:
               </label>
@@ -245,6 +255,17 @@ function HistorialMesaModal({ abierto, mesa, onCerrar }) {
             </button>
           </div>
         </div>
+        
+        {/* Modal de Nueva Reserva */}
+        <NuevaReservaModal
+          abierto={modalNuevaReserva}
+          mesa={mesa}
+          onCerrar={() => setModalNuevaReserva(false)}
+          onReservaCreada={() => {
+            // Recargar historial cuando se crea una nueva reserva
+            cargarHistorialMesa();
+          }}
+        />
       </div>
     </div>
   );

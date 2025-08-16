@@ -146,18 +146,7 @@ class SystemService {
    */
   async eliminarMesa(mesaId) {
     try {
-      // Como alternativa, desactivar la mesa hasta que el backend tenga DELETE
-      const response = await apiClient.put(`/admin/mesas/${mesaId}`, {
-        activa: false
-      });
-      
-      if (response.exito) {
-        return {
-          exito: true,
-          mensaje: 'Mesa desactivada correctamente'
-        };
-      }
-      
+      const response = await apiClient.delete(`/admin/mesas/${mesaId}`);
       return response;
     } catch (error) {
       console.error('Error eliminando mesa:', error);
