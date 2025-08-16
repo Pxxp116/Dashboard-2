@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, RefreshCw, Plus, Trash2, Upload, Image } from 'lucide-react';
+import { X, Save, RefreshCw, Plus, Trash2, Upload } from 'lucide-react';
 import { VALIDATION_RULES } from '../../services/utils/constants';
 import { useMessage } from '../../hooks/useMessage';
 import { useAppContext } from '../../context/AppContext';

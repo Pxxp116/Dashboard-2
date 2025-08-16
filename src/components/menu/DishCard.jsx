@@ -32,6 +32,10 @@ function DishCard({ plato, onToggleDisponibilidad, onEditar, onEliminar }) {
    * @returns {string} Emoji del alérgeno
    */
   const getAlergenoIcon = (alergeno) => {
+    if (!alergeno || typeof alergeno !== 'string') {
+      return '⚠️';
+    }
+    
     const iconos = {
       'gluten': '🌾',
       'lacteos': '🥛',
@@ -80,11 +84,11 @@ function DishCard({ plato, onToggleDisponibilidad, onEditar, onEliminar }) {
           )}
           
           {/* Alérgenos */}
-          {plato.alergenos && plato.alergenos.length > 0 && (
+          {plato.alergenos && plato.alergenos.filter(alergeno => alergeno && alergeno !== null).length > 0 && (
             <div className="flex items-start mt-3">
               <AlertCircle className="w-4 h-4 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
               <div className="flex flex-wrap gap-2">
-                {plato.alergenos.map((alergeno, idx) => (
+                {plato.alergenos.filter(alergeno => alergeno && alergeno !== null).map((alergeno, idx) => (
                   <span 
                     key={idx}
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800"
