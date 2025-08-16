@@ -608,8 +608,147 @@ function GastroBotDashboard() {
           <div className="space-y-6">
             <EstadoSistema />
 
-        {activeTab === 'info' && <InfoGeneralTab />}
+        {activeTab === 'info' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Información General del Restaurante</h2>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => alert('Función de edición próximamente')}
+              >
+                Editar Información
+              </button>
+            </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Datos Básicos</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre del Restaurante
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.nombre || 'La Bona Taula'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de Cocina
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.tipo_cocina || 'Mediterránea'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dirección Completa
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.direccion || 'Carrer de València 234, Barcelona'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Teléfono de Contacto
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.telefono || '+34 932 15 47 89'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email de Contacto
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.email || 'reservas@labonataula.es'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sitio Web Oficial
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.web || 'www.labonataula.es'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Redes Sociales</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Facebook
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.facebook || 'facebook.com/labonataula'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Instagram
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      @{archivoEspejo?.restaurante?.instagram || 'labonataula'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Twitter / X
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      @{archivoEspejo?.restaurante?.twitter || 'labonataula'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      TripAdvisor
+                    </label>
+                    <p className="py-2 px-3 bg-gray-50 rounded-lg">
+                      {archivoEspejo?.restaurante?.tripadvisor || 'No especificado'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Descripción</h3>
+              <p className="py-3 px-4 bg-gray-50 rounded-lg">
+                {archivoEspejo?.restaurante?.descripcion || 'Cocina mediterránea moderna con productos de temporada. Ofrecemos una experiencia gastronómica única en el corazón de Barcelona.'}
+              </p>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                Vista previa en el Bot:
+              </h4>
+              <div className="text-sm text-gray-700 space-y-1">
+                <p>📍 <strong>{archivoEspejo?.restaurante?.nombre || 'La Bona Taula'}</strong></p>
+                <p>🍴 {archivoEspejo?.restaurante?.tipo_cocina || 'Mediterránea'}</p>
+                <p>📍 {archivoEspejo?.restaurante?.direccion || 'Carrer de València 234, Barcelona'}</p>
+                <p>📞 {archivoEspejo?.restaurante?.telefono || '+34 932 15 47 89'}</p>
+                <p>📧 {archivoEspejo?.restaurante?.email || 'reservas@labonataula.es'}</p>
+                <p>🌐 {archivoEspejo?.restaurante?.web || 'www.labonataula.es'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+                  
             {/* Próximas Reservas */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold mb-4">Próximas Reservas</h2>
