@@ -3,6 +3,8 @@ import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, Refre
 
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
+import PoliciesTab from './components/policies/PoliciesTab';
+import { useAppContext } from './context/AppContext';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
 // Log para debug (solo en desarrollo)
@@ -14,13 +16,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 function GastroBotDashboard() {
+  const { datosEspejo, actualizarDatosEspejo } = useAppContext();
   const [activeTab, setActiveTab] = useState('inicio');
   const [estadoSistema, setEstadoSistema] = useState(null);
   const [archivoEspejo, setArchivoEspejo] = useState(null);
   const [reservas, setReservas] = useState([]);
   const [mesas, setMesas] = useState([]);
   const [menu, setMenu] = useState({ categorias: [] });
-  const [politicas, setPoliticas] = useState({});
+  const politicas = datosEspejo?.politicas || {};
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [modalReserva, setModalReserva] = useState(false);
@@ -66,7 +69,7 @@ function GastroBotDashboard() {
         setReservas(data.datos.reservas || []);
         setMesas(data.datos.mesas || []);
         setMenu(data.datos.menu || { categorias: [] });
-        setPoliticas(data.datos.politicas || {});
+        // Las políticas ahora vienen del contexto
       }
     } catch (error) {
       console.error('Error cargando archivo espejo:', error);
@@ -77,10 +80,12 @@ function GastroBotDashboard() {
   useEffect(() => {
     cargarEstadoSistema();
     cargarArchivoEspejo();
+    actualizarDatosEspejo(); // Actualizar datos del contexto
     
     const interval = setInterval(() => {
       cargarEstadoSistema();
       cargarArchivoEspejo();
+      actualizarDatosEspejo(); // Actualizar datos del contexto
     }, 15000);
     
     return () => clearInterval(interval);
@@ -448,59 +453,7 @@ function GastroBotDashboard() {
   // Componente de Mesas - usando el componente actualizado
   const TabMesas = () => <MesasTab mesas={mesas} />;
 
-  // Componente de Políticas
-  const TabPoliticas = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-6">Políticas del Restaurante</h2>
-        
-        <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="font-medium">Cancelación anticipada</span>
-            <span className="text-gray-600">{politicas.cancelacion_horas || 24} horas</span>
-          </div>
-          
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="font-medium">Tiempo de mesa</span>
-            <span className="text-gray-600">{politicas.tiempo_mesa_minutos || 120} minutos</span>
-          </div>
-          
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="font-medium">Niños permitidos</span>
-            <span className={`px-2 py-1 rounded-full text-xs ${
-              politicas.niños_permitidos !== false
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {politicas.niños_permitidos !== false ? 'SÍ' : 'NO'}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="font-medium">Mascotas permitidas</span>
-            <span className={`px-2 py-1 rounded-full text-xs ${
-              politicas.mascotas_permitidas
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {politicas.mascotas_permitidas ? 'SÍ' : 'NO'}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="font-medium">Anticipo requerido</span>
-            <span className={`px-2 py-1 rounded-full text-xs ${
-              politicas.anticipo_requerido
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {politicas.anticipo_requerido ? `SÍ - ${politicas.anticipo_cantidad}€` : 'NO'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Removido TabPoliticas - usando PoliciesTab importado
 
   // Componente de Archivo Espejo
   const TabArchivoEspejo = () => (
@@ -961,7 +914,7 @@ function GastroBotDashboard() {
         {activeTab === 'reservas' && <TabReservas />}
         {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && <TabMenu />}
-        {activeTab === 'politicas' && <TabPoliticas />}
+        {activeTab === 'politicas' && <PoliciesTab politicas={politicas} />}
         {activeTab === 'espejo' && <TabArchivoEspejo />}
    </main>
 
