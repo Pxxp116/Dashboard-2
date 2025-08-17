@@ -5,6 +5,7 @@ import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
 import PoliciesTab from './components/policies/PoliciesTab';
 import MenuTab from './components/menu/MenuTab';
+import HorariosTab from './components/schedules/HorariosTab';
 import { useAppContext } from './context/AppContext';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
@@ -451,6 +452,7 @@ function GastroBotDashboard() {
               {[
       { id: 'inicio', icon: Home, label: 'Inicio' },
       { id: 'info', icon: Building, label: 'Información' },
+      { id: 'horarios', icon: Clock, label: 'Horarios' },
       { id: 'reservas', icon: Calendar, label: 'Reservas' },
       { id: 'mesas', icon: Users, label: 'Mesas' },
       { id: 'menu', icon: Menu, label: 'Menú' },
@@ -842,6 +844,7 @@ function GastroBotDashboard() {
           </div>
         )}
 
+        {activeTab === 'horarios' && <HorariosTab />}
         {activeTab === 'reservas' && <TabReservas />}
         {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && <MenuTab menu={menu} />}
