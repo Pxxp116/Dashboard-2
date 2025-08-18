@@ -6,6 +6,7 @@ import MesasTab from './components/tables/MesasTab';
 import PoliciesTab from './components/policies/PoliciesTab';
 import MenuTab from './components/menu/MenuTab';
 import HorariosTab from './components/schedules/HorariosTab';
+import ReservasTab from './components/reservations/ReservasTab';
 import { useAppContext } from './context/AppContext';
 const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
@@ -135,7 +136,7 @@ function GastroBotDashboard() {
     setLoading(false);
   };
 
-  // Cancelar reserva
+  // Cancelar reserva (cambiar estado a cancelada)
   const cancelarReserva = async (id) => {
     if (!window.confirm('¿Seguro que quieres cancelar esta reserva?')) return;
     
@@ -157,6 +158,30 @@ function GastroBotDashboard() {
       }
     } catch (error) {
       mostrarMensaje('Error al cancelar reserva', 'error');
+    }
+    setLoading(false);
+  };
+
+  // Eliminar reserva completamente
+  const eliminarReserva = async (id) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/cancelar-reserva/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: 'Eliminado desde dashboard' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.exito) {
+        mostrarMensaje(data.mensaje);
+        actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(data.mensaje, 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al eliminar reserva', 'error');
     }
     setLoading(false);
   };
@@ -291,75 +316,6 @@ function GastroBotDashboard() {
     );
   };
 
-  // Componente de Reservas
-  const TabReservas = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Reservas del Día</h2>
-          <button
-            onClick={() => setModalReserva(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Reserva
-          </button>
-        </div>
-        
-        {reservas.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No hay reservas para hoy</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Hora</th>
-                  <th className="text-left py-2">Nombre</th>
-                  <th className="text-left py-2">Personas</th>
-                  <th className="text-left py-2">Mesa</th>
-                  <th className="text-left py-2">Estado</th>
-                  <th className="text-left py-2">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservas.map((reserva) => (
-                  <tr key={reserva.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3">{reserva.hora?.substring(0, 5)}</td>
-                    <td className="py-3">
-                      <div>
-                        <p className="font-medium">{reserva.nombre}</p>
-                        <p className="text-sm text-gray-500">{reserva.telefono}</p>
-                      </div>
-                    </td>
-                    <td className="py-3">{reserva.personas}</td>
-                    <td className="py-3">Mesa {reserva.mesa_id}</td>
-                    <td className="py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        reserva.estado === 'confirmada' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {reserva.estado}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <button
-                        onClick={() => cancelarReserva(reserva.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
-                        disabled={loading}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   // Componente del Menú
   const TabMenu = () => (
@@ -845,7 +801,15 @@ function GastroBotDashboard() {
         )}
 
         {activeTab === 'horarios' && <HorariosTab />}
-        {activeTab === 'reservas' && <TabReservas />}
+        {activeTab === 'reservas' && (
+          <ReservasTab 
+            reservas={reservas} 
+            loading={loading}
+            onNuevaReserva={() => setModalReserva(true)}
+            onCancelarReserva={cancelarReserva}
+            onEliminarReserva={eliminarReserva}
+          />
+        )}
         {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && <PoliciesTab politicas={politicas} />}

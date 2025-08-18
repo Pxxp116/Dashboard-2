@@ -15,9 +15,10 @@ import { SYSTEM_MESSAGES } from '../../services/utils/constants';
  * @param {boolean} props.loading - Estado de carga
  * @param {Function} props.onNuevaReserva - Callback para nueva reserva
  * @param {Function} props.onCancelarReserva - Callback para cancelar reserva
+ * @param {Function} props.onEliminarReserva - Callback para eliminar reserva
  * @returns {JSX.Element} Componente ReservasTab
  */
-function ReservasTab({ reservas, loading, onNuevaReserva, onCancelarReserva }) {
+function ReservasTab({ reservas, loading, onNuevaReserva, onCancelarReserva, onEliminarReserva }) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -41,6 +42,7 @@ function ReservasTab({ reservas, loading, onNuevaReserva, onCancelarReserva }) {
           <ReservationTable
             reservas={reservas}
             onCancelar={onCancelarReserva}
+            onEliminar={onEliminarReserva}
             loading={loading}
           />
         )}

@@ -3,8 +3,8 @@
  * Muestra todas las reservas en formato tabla
  */
 
-import React from 'react';
-import { X, Phone, Users, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Phone, Users, Clock, Trash2 } from 'lucide-react';
 import { ESTADOS_RESERVA } from '../../types';
 
 /**
@@ -12,10 +12,12 @@ import { ESTADOS_RESERVA } from '../../types';
  * @param {Object} props - Props del componente
  * @param {Array} props.reservas - Lista de reservas
  * @param {Function} props.onCancelar - Callback para cancelar reserva
+ * @param {Function} props.onEliminar - Callback para eliminar reserva
  * @param {boolean} props.loading - Estado de carga
  * @returns {JSX.Element} Componente ReservationTable
  */
-function ReservationTable({ reservas, onCancelar, loading }) {
+function ReservationTable({ reservas, onCancelar, onEliminar, loading }) {
+  const [confirmando, setConfirmando] = useState(null);
   /**
    * Obtiene el estilo del badge de estado
    * @param {string} estado - Estado de la reserva
@@ -37,6 +39,32 @@ function ReservationTable({ reservas, onCancelar, loading }) {
    */
   const formatearHora = (hora) => {
     return hora ? hora.substring(0, 5) : '';
+  };
+
+  /**
+   * Maneja la confirmación de eliminación
+   * @param {Object} reserva - Reserva a eliminar
+   */
+  const handleEliminar = (reserva) => {
+    setConfirmando(reserva.id);
+  };
+
+  /**
+   * Confirma la eliminación
+   * @param {Object} reserva - Reserva a eliminar
+   */
+  const confirmarEliminacion = (reserva) => {
+    if (onEliminar) {
+      onEliminar(reserva.id);
+    }
+    setConfirmando(null);
+  };
+
+  /**
+   * Cancela la eliminación
+   */
+  const cancelarEliminacion = () => {
+    setConfirmando(null);
   };
 
   return (
@@ -99,15 +127,48 @@ function ReservationTable({ reservas, onCancelar, loading }) {
                 )}
               </td>
               <td className="py-3 px-3 text-center">
-                {reserva.estado !== ESTADOS_RESERVA.CANCELADA && (
-                  <button
-                    onClick={() => onCancelar(reserva.id)}
-                    className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition-colors"
-                    disabled={loading}
-                    title="Cancelar reserva"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                {confirmando === reserva.id ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-sm text-gray-600">¿Eliminar?</span>
+                    <button
+                      onClick={() => confirmarEliminacion(reserva)}
+                      className="text-green-600 hover:text-green-800 p-1"
+                      disabled={loading}
+                      title="Confirmar eliminación"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelarEliminacion}
+                      className="text-red-600 hover:text-red-800 p-1"
+                      title="Cancelar"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-1">
+                    {reserva.estado !== ESTADOS_RESERVA.CANCELADA && onCancelar && (
+                      <button
+                        onClick={() => onCancelar(reserva.id)}
+                        className="text-yellow-600 hover:text-yellow-800 p-2 hover:bg-yellow-50 rounded transition-colors"
+                        disabled={loading}
+                        title="Cancelar reserva"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    {onEliminar && (
+                      <button
+                        onClick={() => handleEliminar(reserva)}
+                        className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition-colors"
+                        disabled={loading}
+                        title="Eliminar reserva"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </td>
             </tr>
