@@ -143,7 +143,7 @@ function GastroBotDashboard() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/cancelar-reserva/${id}`, {
-        method: 'DELETE',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo: 'Cancelado desde dashboard' })
       });
