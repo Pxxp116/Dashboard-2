@@ -45,7 +45,12 @@ class ReservationService {
    */
   async crearReserva(reservaData) {
     try {
-      const response = await apiClient.post('/crear-reserva', reservaData);
+      // Asegurar que las reservas del dashboard se identifiquen correctamente
+      const datosConOrigen = {
+        ...reservaData,
+        origen: reservaData.origen || 'dashboard'
+      };
+      const response = await apiClient.post('/crear-reserva', datosConOrigen);
       return response;
     } catch (error) {
       console.error('Error creando reserva:', error);

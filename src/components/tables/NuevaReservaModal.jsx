@@ -114,7 +114,8 @@ function NuevaReservaModal({ abierto, mesa, onCerrar, onReservaCreada }) {
         mesa_id: mesa.id,
         notas: formData.notas.trim() || null,
         alergias: formData.alergias.trim() || null,
-        duracion: datosEspejo?.politicas?.tiempo_mesa_minutos || 120
+        duracion: datosEspejo?.politicas?.tiempo_mesa_minutos || 120,
+        origen: 'dashboard'  // Identificar que la reserva viene del dashboard
       };
 
       // Llamar a la API para crear reserva
