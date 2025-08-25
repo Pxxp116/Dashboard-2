@@ -86,27 +86,36 @@ function GastroBotDashboard() {
   const crearReserva = async () => {
     setLoading(true);
     try {
-      // Primero buscar mesa disponible
+      // CRÍTICO: Obtener duración actual de políticas antes de buscar mesa
+      const duracionResponse = await fetch(`${API_URL}/admin/datos-completos`);
+      const datosCompletos = await duracionResponse.json();
+      const duracionActual = datosCompletos?.politicas?.tiempo_mesa_minutos || 120;
+      
+      console.log(`📊 [DASHBOARD] Usando duración actualizada: ${duracionActual} minutos`);
+      
+      // Primero buscar mesa disponible con duración específica
       const busquedaResponse = await fetch(`${API_URL}/buscar-mesa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fecha: nuevaReserva.fecha,
           hora: nuevaReserva.hora,
-          personas: nuevaReserva.personas
+          personas: nuevaReserva.personas,
+          duracion: duracionActual
         })
       });
       
       const busquedaData = await busquedaResponse.json();
       
       if (busquedaData.exito && busquedaData.mesa_disponible) {
-        // Crear la reserva con la mesa encontrada
+        // Crear la reserva con la mesa encontrada y duración específica
         const response = await fetch(`${API_URL}/crear-reserva`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...nuevaReserva,
-            mesa_id: busquedaData.mesa_disponible.id
+            mesa_id: busquedaData.mesa_disponible.id,
+            duracion: duracionActual
           })
         });
         
@@ -128,7 +137,16 @@ function GastroBotDashboard() {
           mostrarMensaje(data.mensaje, 'error');
         }
       } else {
-        mostrarMensaje('No hay mesas disponibles para esa hora', 'error');
+        // Mostrar alternativas si están disponibles
+        let mensaje = 'No hay mesas disponibles para esa hora';
+        if (busquedaData.alternativas && busquedaData.alternativas.length > 0) {
+          const primeraAlternativa = busquedaData.alternativas[0];
+          mensaje += `. Horarios disponibles: ${primeraAlternativa.hora}`;
+          if (busquedaData.alternativas.length > 1) {
+            mensaje += `, ${busquedaData.alternativas[1].hora}`;
+          }
+        }
+        mostrarMensaje(mensaje, 'error');
       }
     } catch (error) {
       mostrarMensaje('Error al crear reserva', 'error');

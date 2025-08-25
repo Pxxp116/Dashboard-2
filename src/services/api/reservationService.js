@@ -15,14 +15,24 @@ class ReservationService {
    * @param {string} params.fecha - Fecha de la reserva
    * @param {string} params.hora - Hora de la reserva
    * @param {number} params.personas - Número de personas
+   * @param {number} [params.duracion] - Duración de la reserva en minutos
    * @returns {Promise<{exito: boolean, mesa_disponible: Object|null, mensaje: string}>}
    */
-  async buscarMesaDisponible({ fecha, hora, personas }) {
+  async buscarMesaDisponible({ fecha, hora, personas, duracion }) {
     try {
+      // CRÍTICO: Obtener duración actual si no se especifica
+      let duracionFinal = duracion;
+      if (!duracionFinal) {
+        const datosResponse = await apiClient.get('/admin/datos-completos');
+        duracionFinal = datosResponse?.politicas?.tiempo_mesa_minutos || 120;
+        console.log(`📊 [RESERVATION-SERVICE] Obtenida duración de políticas: ${duracionFinal} min`);
+      }
+      
       const response = await apiClient.post('/buscar-mesa', {
         fecha,
         hora,
-        personas
+        personas,
+        duracion: duracionFinal
       });
       return response;
     } catch (error) {
@@ -65,11 +75,17 @@ class ReservationService {
    */
   async crearReservaCompleta(datosReserva) {
     try {
-      // Primero buscar mesa disponible
+      // CRÍTICO: Obtener duración actual para usar en toda la operación
+      const datosResponse = await apiClient.get('/admin/datos-completos');
+      const duracionActual = datosResponse?.politicas?.tiempo_mesa_minutos || 120;
+      console.log(`📊 [RESERVATION-SERVICE] Duración para reserva completa: ${duracionActual} min`);
+      
+      // Primero buscar mesa disponible con duración específica
       const busquedaResponse = await this.buscarMesaDisponible({
         fecha: datosReserva.fecha,
         hora: datosReserva.hora,
-        personas: datosReserva.personas
+        personas: datosReserva.personas,
+        duracion: duracionActual
       });
       
       if (!busquedaResponse.exito || !busquedaResponse.mesa_disponible) {
@@ -79,10 +95,11 @@ class ReservationService {
         };
       }
       
-      // Crear la reserva con la mesa encontrada
+      // Crear la reserva con la mesa encontrada y duración específica
       const reservaResponse = await this.crearReserva({
         ...datosReserva,
-        mesa_id: busquedaResponse.mesa_disponible.id
+        mesa_id: busquedaResponse.mesa_disponible.id,
+        duracion: duracionActual
       });
       
       return reservaResponse;
