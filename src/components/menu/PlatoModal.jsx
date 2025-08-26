@@ -129,11 +129,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       const imageURL = URL.createObjectURL(file);
       handleChange('imagen_url', imageURL);
       
-      // Por ahora usar URL temporal - en el futuro implementar subida real
-      mostrarMensaje('Imagen cargada localmente. Para subida permanente, usar el campo URL.', 'info');
-      
-      // TODO: Implementar subida de archivos con multer en el backend
-      /*
+      // Subir archivo real al servidor
       const formDataImg = new FormData();
       formDataImg.append('imagen', file);
       
@@ -150,12 +146,14 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       const data = await response.json();
       
       if (data.exito) {
+        // Reemplazar URL blob temporal con URL pública permanente
         handleChange('imagen_url', data.imagen_url);
         mostrarMensaje('Imagen subida correctamente', 'success');
+        console.log('🔄 URL actualizada de blob: a pública:', data.imagen_url);
       } else {
         mostrarMensaje(data.mensaje || 'Error al subir imagen', 'error');
       }
-      */
+      
     } catch (error) {
       console.error('Error procesando imagen:', error);
       mostrarMensaje('Error al procesar imagen: ' + error.message, 'error');
