@@ -23,6 +23,7 @@ function MenuTab({ menu }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoModal, setModoModal] = useState('crear');
   const [platoSeleccionado, setPlatoSeleccionado] = useState(null);
+  const [categoriaSeleccionadaParaPlato, setCategoriaSeleccionadaParaPlato] = useState(null);
   
   // Estados para el modal de categorías
   const [modalCategoriaAbierto, setModalCategoriaAbierto] = useState(false);
@@ -89,11 +90,29 @@ function MenuTab({ menu }) {
 
   /**
    * Abre el modal para crear un nuevo plato
+   * @param {Object} categoria - Categoría seleccionada (opcional)
    */
-  const abrirModalCrear = () => {
+  const abrirModalCrear = (categoria = null) => {
     setModoModal('crear');
     setPlatoSeleccionado(null);
+    setCategoriaSeleccionadaParaPlato(categoria);
+    
+    // Si se proporciona una categoría, expandir la categoría si no está expandida
+    if (categoria) {
+      if (categoriaExpandida !== categoria.id) {
+        setCategoriaExpandida(categoria.id);
+      }
+    }
+    
     setModalAbierto(true);
+  };
+
+  /**
+   * Maneja la creación de plato desde una categoría específica
+   * @param {Object} categoria - Categoría donde crear el plato
+   */
+  const manejarAñadirPlatoCategoria = (categoria) => {
+    abrirModalCrear(categoria);
   };
 
   /**
@@ -103,7 +122,17 @@ function MenuTab({ menu }) {
   const abrirModalEditar = (plato) => {
     setModoModal('editar');
     setPlatoSeleccionado(plato);
+    setCategoriaSeleccionadaParaPlato(null); // No preseleccionar categoría al editar
     setModalAbierto(true);
+  };
+
+  /**
+   * Maneja el cierre del modal de platos
+   */
+  const manejarCierreModal = () => {
+    setModalAbierto(false);
+    setCategoriaSeleccionadaParaPlato(null);
+    setPlatoSeleccionado(null);
   };
 
   /**
@@ -176,9 +205,16 @@ function MenuTab({ menu }) {
 
   /**
    * Maneja el guardado del modal de platos
+   * @param {Object} platoCreado - Datos del plato creado/editado
    */
-  const manejarGuardadoModal = async () => {
+  const manejarGuardadoModal = async (platoCreado = null) => {
     await actualizarDatosEspejo();
+    
+    // Si se creó un plato nuevo, expandir su categoría
+    if (modoModal === 'crear' && platoCreado && platoCreado.categoria_id) {
+      setCategoriaExpandida(platoCreado.categoria_id);
+    }
+    
     setModalAbierto(false);
   };
 
@@ -358,6 +394,7 @@ function MenuTab({ menu }) {
                 mostrarVacio={!busqueda}
                 onEditarCategoria={abrirModalEditarCategoria}
                 onEliminarCategoria={eliminarCategoria}
+                onAñadirPlato={manejarAñadirPlatoCategoria}
               />
             ))}
           </div>
@@ -370,7 +407,8 @@ function MenuTab({ menu }) {
         modo={modoModal}
         plato={platoSeleccionado}
         categorias={menu.categorias || []}
-        onCerrar={() => setModalAbierto(false)}
+        categoriaInicialId={categoriaSeleccionadaParaPlato?.id}
+        onCerrar={manejarCierreModal}
         onGuardar={manejarGuardadoModal}
       />
 

@@ -78,21 +78,52 @@ function DishCard({ plato, onToggleDisponibilidad, onEditar, onEliminar }) {
           
           {/* Descripción */}
           {plato.descripcion && (
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-gray-600 mb-3">
               {plato.descripcion}
             </p>
           )}
           
+          {/* Características del plato */}
+          {(plato.vegetariano || plato.vegano || plato.sin_gluten || plato.picante || plato.recomendado) && (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {plato.recomendado && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium">
+                  ⭐ Recomendado
+                </span>
+              )}
+              {plato.vegetariano && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                  🌱 Vegetariano
+                </span>
+              )}
+              {plato.vegano && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                  🌿 Vegano
+                </span>
+              )}
+              {plato.sin_gluten && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                  🚫 Sin gluten
+                </span>
+              )}
+              {plato.picante && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                  🌶️ Picante
+                </span>
+              )}
+            </div>
+          )}
+          
           {/* Alérgenos */}
           {plato.alergenos && plato.alergenos.filter(alergeno => alergeno && alergeno !== null).length > 0 && (
-            <div className="flex items-start mt-3">
+            <div className="flex items-start mb-2">
               <AlertCircle className="w-4 h-4 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1">
                 {plato.alergenos.filter(alergeno => alergeno && alergeno !== null).map((alergeno, idx) => (
                   <span 
                     key={idx}
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800"
-                    title={alergeno}
+                    title={`Contiene ${alergeno}`}
                   >
                     <span className="mr-1">{getAlergenoIcon(alergeno)}</span>
                     {alergeno}
@@ -110,42 +141,64 @@ function DishCard({ plato, onToggleDisponibilidad, onEditar, onEliminar }) {
           )}
         </div>
         
-        {/* Botones de acción */}
-        <div className="ml-4 flex flex-col space-y-2">
-          {/* Botón de disponibilidad */}
-          <button
-            onClick={() => onToggleDisponibilidad(plato.id, plato.disponible)}
-            className={`p-2 rounded-lg transition-colors ${
+        {/* Botones de acción mejorados */}
+        <div className="ml-4 flex flex-col space-y-1.5">
+          {/* Estado de disponibilidad */}
+          <div className="flex items-center justify-center">
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
               plato.disponible
-                ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                : 'bg-red-100 text-red-600 hover:bg-red-200'
-            }`}
-            title={plato.disponible ? 'Marcar como no disponible' : 'Marcar como disponible'}
-          >
-            {plato.disponible ? (
-              <Eye className="w-4 h-4" />
-            ) : (
-              <EyeOff className="w-4 h-4" />
-            )}
-          </button>
-          
-          {/* Botón de editar */}
-          <button
-            onClick={() => onEditar(plato)}
-            className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors"
-            title="Editar plato"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          
-          {/* Botón de eliminar */}
-          <button
-            onClick={() => onEliminar(plato.id)}
-            className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors"
-            title="Eliminar plato"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {plato.disponible ? (
+                <>
+                  <Eye className="w-3 h-3 mr-1" />
+                  Disponible
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-3 h-3 mr-1" />
+                  No disponible
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* Grupo de botones de acción */}
+          <div className="flex flex-col space-y-1">
+            {/* Botón toggle disponibilidad */}
+            <button
+              onClick={() => onToggleDisponibilidad(plato.id, plato.disponible)}
+              className={`p-1.5 rounded-md transition-colors text-xs font-medium ${
+                plato.disponible
+                  ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                  : 'bg-green-50 text-green-700 hover:bg-green-100'
+              }`}
+              title={plato.disponible ? 'Marcar como no disponible' : 'Marcar como disponible'}
+            >
+              {plato.disponible ? 'Ocultar' : 'Mostrar'}
+            </button>
+            
+            {/* Botón de editar */}
+            <button
+              onClick={() => onEditar(plato)}
+              className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md transition-colors flex items-center justify-center text-xs font-medium"
+              title="Editar plato"
+            >
+              <Edit2 className="w-3 h-3 mr-1" />
+              Editar
+            </button>
+            
+            {/* Botón de eliminar */}
+            <button
+              onClick={() => onEliminar(plato.id)}
+              className="p-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-md transition-colors flex items-center justify-center text-xs font-medium"
+              title="Eliminar plato"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Eliminar
+            </button>
+          </div>
         </div>
       </div>
     </div>

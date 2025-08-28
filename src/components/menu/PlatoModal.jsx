@@ -16,13 +16,14 @@ import { useAppContext } from '../../context/AppContext';
  * @param {string} props.modo - Modo del modal ('crear' o 'editar')
  * @param {Object} props.plato - Datos del plato (para editar)
  * @param {Array} props.categorias - Lista de categorías
+ * @param {number} props.categoriaInicialId - ID de categoría preseleccionada
  * @param {Function} props.onCerrar - Callback al cerrar
  * @param {Function} props.onGuardar - Callback al guardar
  * @returns {JSX.Element} Componente PlatoModal
  */
-function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGuardar }) {
+function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInicialId, onCerrar, onGuardar }) {
   const [formData, setFormData] = useState({
-    categoria_id: categorias[0]?.id || 1,
+    categoria_id: categoriaInicialId || categorias[0]?.id || 1,
     nombre: '',
     descripcion: '',
     precio: '',
@@ -38,6 +39,9 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
   const [alergenoNuevo, setAlergenoNuevo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const [validandoNombre, setValidandoNombre] = useState(false);
+  const [nombreDuplicado, setNombreDuplicado] = useState(false);
+  const [mensajeValidacion, setMensajeValidacion] = useState('');
   const fileInputRef = useRef(null);
   
   const { actualizarDatosEspejo } = useAppContext();
@@ -70,7 +74,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
         });
       } else {
         setFormData({
-          categoria_id: categorias[0]?.id || 1,
+          categoria_id: categoriaInicialId || categorias[0]?.id || 1,
           nombre: '',
           descripcion: '',
           precio: '',
@@ -85,8 +89,67 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
         });
       }
       setAlergenoNuevo('');
+      // Resetear estados de validación
+      setNombreDuplicado(false);
+      setMensajeValidacion('');
+      setValidandoNombre(false);
     }
-  }, [abierto, modo, plato, categorias]);
+  }, [abierto, modo, plato, categorias, categoriaInicialId]);
+
+  /**
+   * Valida si el nombre del plato ya existe
+   * @param {string} nombre - Nombre del plato
+   * @param {number} categoriaId - ID de la categoría
+   */
+  const validarNombrePlato = async (nombre, categoriaId) => {
+    if (!nombre.trim() || !categoriaId) {
+      setNombreDuplicado(false);
+      setMensajeValidacion('');
+      return;
+    }
+
+    setValidandoNombre(true);
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const response = await fetch(`${API_URL}/admin/menu/plato/validar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          categoria_id: categoriaId,
+          plato_id: modo === 'editar' ? plato?.id : null
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.exito) {
+        setNombreDuplicado(data.duplicado);
+        setMensajeValidacion(data.mensaje);
+      }
+    } catch (error) {
+      console.error('Error validando nombre:', error);
+      setNombreDuplicado(false);
+      setMensajeValidacion('');
+    } finally {
+      setValidandoNombre(false);
+    }
+  };
+
+  // Efecto para validar el nombre cuando cambie
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.nombre && formData.categoria_id) {
+        validarNombrePlato(formData.nombre, formData.categoria_id);
+      }
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.nombre, formData.categoria_id, modo, plato?.id]);
 
   /**
    * Maneja el cambio de un campo
@@ -244,7 +307,9 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
       formData.descripcion?.trim().length > 0 &&
       !isNaN(precio) &&
       precio >= VALIDATION_RULES.MIN_PRICE &&
-      precio <= VALIDATION_RULES.MAX_PRICE
+      precio <= VALIDATION_RULES.MAX_PRICE &&
+      !nombreDuplicado &&
+      !validandoNombre
     );
   };
 
@@ -295,14 +360,34 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, onCerrar, onGu
             <label className="block text-sm font-medium mb-1">
               Nombre del Plato <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={formData.nombre}
-              onChange={(e) => handleChange('nombre', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Ej: Paella Valenciana"
-              required
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.nombre}
+                onChange={(e) => handleChange('nombre', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                  nombreDuplicado
+                    ? 'border-red-500 focus:ring-red-500'
+                    : validandoNombre
+                    ? 'border-yellow-500 focus:ring-yellow-500'
+                    : 'border-gray-300 focus:ring-green-500'
+                }`}
+                placeholder="Ej: Paella Valenciana"
+                required
+              />
+              {validandoNombre && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <RefreshCw className="w-4 h-4 text-yellow-500 animate-spin" />
+                </div>
+              )}
+            </div>
+            {mensajeValidacion && (
+              <p className={`text-xs mt-1 ${
+                nombreDuplicado ? 'text-red-600' : 'text-green-600'
+              }`}>
+                {mensajeValidacion}
+              </p>
+            )}
           </div>
           
           {/* Descripción */}

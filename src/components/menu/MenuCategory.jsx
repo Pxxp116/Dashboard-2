@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChevronDown, ChevronUp, Edit2, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit2, Trash2, Plus } from 'lucide-react';
 import DishCard from './DishCard';
 
 /**
@@ -19,6 +19,7 @@ import DishCard from './DishCard';
  * @param {boolean} props.mostrarVacio - Si mostrar cuando no hay platos
  * @param {Function} props.onEditarCategoria - Callback para editar categoría
  * @param {Function} props.onEliminarCategoria - Callback para eliminar categoría
+ * @param {Function} props.onAñadirPlato - Callback para añadir plato a la categoría
  * @returns {JSX.Element|null} Componente MenuCategory
  */
 function MenuCategory({ 
@@ -30,7 +31,8 @@ function MenuCategory({
   onToggleExpand,
   mostrarVacio = true,
   onEditarCategoria,
-  onEliminarCategoria
+  onEliminarCategoria,
+  onAñadirPlato
 }) {
   // No mostrar si no hay platos y no se debe mostrar vacío
   if (!mostrarVacio && (!categoria.platos || categoria.platos.length === 0)) {
@@ -59,6 +61,17 @@ function MenuCategory({
     e.stopPropagation(); // Evitar que se expanda/contraiga
     if (onEliminarCategoria) {
       onEliminarCategoria(categoria);
+    }
+  };
+
+  /**
+   * Maneja el clic en añadir plato
+   * @param {Object} e - Evento del clic
+   */
+  const manejarAñadirPlato = (e) => {
+    e.stopPropagation(); // Evitar que se expanda/contraiga
+    if (onAñadirPlato) {
+      onAñadirPlato(categoria);
     }
   };
 
@@ -133,10 +146,33 @@ function MenuCategory({
       {/* Lista de platos */}
       {expandida && (
         <div className="p-4">
+          {/* Botón añadir plato contextual */}
+          {onAñadirPlato && (
+            <div className="mb-4">
+              <button
+                onClick={manejarAñadirPlato}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm"
+                title={`Añadir plato a ${categoria.nombre}`}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Añadir plato a {categoria.nombre}
+              </button>
+            </div>
+          )}
+          
           {cantidadPlatos === 0 ? (
-            <p className="text-center py-4 text-gray-500">
-              No hay platos en esta categoría
-            </p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-3">No hay platos en esta categoría</p>
+              {onAñadirPlato && (
+                <button
+                  onClick={manejarAñadirPlato}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center mx-auto"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Crear primer plato
+                </button>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {categoria.platos.map((plato) => (
