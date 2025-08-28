@@ -93,6 +93,7 @@ function MenuTab({ menu }) {
    * @param {Object} categoria - Categoría seleccionada (opcional)
    */
   const abrirModalCrear = (categoria = null) => {
+    console.log('🔄 MenuTab: Abriendo modal crear', { categoria: categoria?.nombre, categoriaId: categoria?.id });
     setModoModal('crear');
     setPlatoSeleccionado(null);
     setCategoriaSeleccionadaParaPlato(categoria);
@@ -130,6 +131,7 @@ function MenuTab({ menu }) {
    * Maneja el cierre del modal de platos
    */
   const manejarCierreModal = () => {
+    console.log('🔄 MenuTab: Cerrando modal de platos');
     setModalAbierto(false);
     setCategoriaSeleccionadaParaPlato(null);
     setPlatoSeleccionado(null);
@@ -208,14 +210,20 @@ function MenuTab({ menu }) {
    * @param {Object} platoCreado - Datos del plato creado/editado
    */
   const manejarGuardadoModal = async (platoCreado = null) => {
+    console.log('✅ MenuTab: Guardado exitoso', { modo: modoModal, platoCreado });
+    
     await actualizarDatosEspejo();
     
     // Si se creó un plato nuevo, expandir su categoría
     if (modoModal === 'crear' && platoCreado && platoCreado.categoria_id) {
+      console.log('📂 Expandiendo categoría:', platoCreado.categoria_id);
       setCategoriaExpandida(platoCreado.categoria_id);
     }
     
+    // Resetear estados
     setModalAbierto(false);
+    setCategoriaSeleccionadaParaPlato(null);
+    setPlatoSeleccionado(null);
   };
 
   /**
@@ -402,15 +410,17 @@ function MenuTab({ menu }) {
       </div>
 
       {/* Modal de plato */}
-      <PlatoModal
-        abierto={modalAbierto}
-        modo={modoModal}
-        plato={platoSeleccionado}
-        categorias={menu.categorias || []}
-        categoriaInicialId={categoriaSeleccionadaParaPlato?.id}
-        onCerrar={manejarCierreModal}
-        onGuardar={manejarGuardadoModal}
-      />
+      {modalAbierto && (
+        <PlatoModal
+          abierto={modalAbierto}
+          modo={modoModal}
+          plato={platoSeleccionado}
+          categorias={menu.categorias || []}
+          categoriaInicialId={categoriaSeleccionadaParaPlato?.id}
+          onCerrar={manejarCierreModal}
+          onGuardar={manejarGuardadoModal}
+        />
+      )}
 
       {/* Modal de categoría */}
       <CategoriaModal

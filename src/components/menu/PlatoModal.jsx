@@ -42,6 +42,8 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
   const [validandoNombre, setValidandoNombre] = useState(false);
   const [nombreDuplicado, setNombreDuplicado] = useState(false);
   const [mensajeValidacion, setMensajeValidacion] = useState('');
+  const [formularioInicializado, setFormularioInicializado] = useState(false);
+  const [datosOriginales, setDatosOriginales] = useState(null);
   const fileInputRef = useRef(null);
   
   const { actualizarDatosEspejo } = useAppContext();
@@ -54,11 +56,19 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
     'Sulfitos', 'Moluscos', 'Altramuces', 'Cacahuetes'
   ];
 
-  // Inicializar formulario cuando cambie el modo o plato
+  // Inicializar formulario solo cuando se abre el modal
   useEffect(() => {
-    if (abierto) {
+    if (abierto && !formularioInicializado && categorias.length > 0) {
+      console.log('🔧 Inicializando formulario PlatoModal', { 
+        modo, 
+        plato: plato?.nombre, 
+        categoriaInicialId, 
+        categoriasDisponibles: categorias.length 
+      });
+      
+      let nuevoFormData;
       if (modo === 'editar' && plato) {
-        setFormData({
+        nuevoFormData = {
           categoria_id: plato.categoria_id || categorias[0]?.id || 1,
           nombre: plato.nombre || '',
           descripcion: plato.descripcion || '',
@@ -71,9 +81,9 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
           sin_gluten: plato.sin_gluten || false,
           picante: plato.picante || false,
           recomendado: plato.recomendado || false
-        });
+        };
       } else {
-        setFormData({
+        nuevoFormData = {
           categoria_id: categoriaInicialId || categorias[0]?.id || 1,
           nombre: '',
           descripcion: '',
@@ -86,15 +96,33 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
           sin_gluten: false,
           picante: false,
           recomendado: false
-        });
+        };
       }
+      
+      console.log('📊 FormData inicial establecido:', nuevoFormData);
+      setFormData(nuevoFormData);
+      setDatosOriginales(nuevoFormData);
+      setFormularioInicializado(true);
       setAlergenoNuevo('');
+      
       // Resetear estados de validación
       setNombreDuplicado(false);
       setMensajeValidacion('');
       setValidandoNombre(false);
     }
-  }, [abierto, modo, plato, categorias, categoriaInicialId]);
+  }, [abierto, modo, plato?.id, categoriaInicialId, formularioInicializado, categorias.length]);
+
+  // Resetear estado cuando se cierra el modal
+  useEffect(() => {
+    if (!abierto) {
+      console.log('🔧 Reseteando estado PlatoModal al cerrar');
+      setFormularioInicializado(false);
+      setDatosOriginales(null);
+      setNombreDuplicado(false);
+      setMensajeValidacion('');
+      setValidandoNombre(false);
+    }
+  }, [abierto]);
 
   /**
    * Valida si el nombre del plato ya existe
@@ -140,16 +168,23 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
     }
   };
 
-  // Efecto para validar el nombre cuando cambie
+  // Efecto para validar el nombre cuando cambie (solo si el formulario está inicializado)
   useEffect(() => {
+    if (!formularioInicializado) return;
+    
     const timeoutId = setTimeout(() => {
-      if (formData.nombre && formData.categoria_id) {
+      if (formData.nombre?.trim() && formData.categoria_id) {
+        console.log('🔍 Validando nombre:', formData.nombre);
         validarNombrePlato(formData.nombre, formData.categoria_id);
+      } else {
+        // Limpiar validación si no hay nombre
+        setNombreDuplicado(false);
+        setMensajeValidacion('');
       }
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [formData.nombre, formData.categoria_id, modo, plato?.id]);
+  }, [formData.nombre, formData.categoria_id, formularioInicializado]);
 
   /**
    * Maneja el cambio de un campo
@@ -157,7 +192,12 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
    * @param {any} valor - Nuevo valor
    */
   const handleChange = (campo, valor) => {
-    setFormData(prev => ({ ...prev, [campo]: valor }));
+    console.log(`📝 Cambio en campo "${campo}":`, valor);
+    setFormData(prev => {
+      const nuevoData = { ...prev, [campo]: valor };
+      console.log('📊 FormData actualizado:', nuevoData);
+      return nuevoData;
+    });
   };
 
   /**
@@ -252,7 +292,16 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
    * Guarda el plato
    */
   const guardarPlato = async () => {
+    console.log('💾 Intentando guardar plato:', { modo, formData });
+    
     if (!esFormularioValido()) {
+      console.log('❌ Validación falló:', {
+        nombre: formData.nombre?.trim().length > 0,
+        descripcion: formData.descripcion?.trim().length > 0,
+        precio: !isNaN(parseFloat(formData.precio)),
+        nombreDuplicado,
+        validandoNombre
+      });
       mostrarMensaje('Por favor completa todos los campos requeridos', 'error');
       return;
     }
@@ -266,17 +315,24 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
       
       const method = modo === 'crear' ? 'POST' : 'PUT';
       
+      console.log('📡 Enviando request:', { url, method, formData });
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
       
+      console.log('📡 Response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('❌ Response error:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('✅ Response data:', data);
       
       if (data.exito) {
         mostrarMensaje(
@@ -284,12 +340,13 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
           'success'
         );
         await actualizarDatosEspejo();
-        if (onGuardar) onGuardar();
+        if (onGuardar) onGuardar(data.plato || formData);
       } else {
+        console.log('❌ Backend error:', data);
         mostrarMensaje(data.mensaje || 'Error al guardar plato', 'error');
       }
     } catch (error) {
-      console.error('Error guardando plato:', error);
+      console.error('❌ Error guardando plato:', error);
       mostrarMensaje('Error al guardar plato: ' + error.message, 'error');
     } finally {
       setGuardando(false);
@@ -302,15 +359,21 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
    */
   const esFormularioValido = () => {
     const precio = parseFloat(formData.precio);
-    return (
-      formData.nombre?.trim().length > 0 &&
-      formData.descripcion?.trim().length > 0 &&
-      !isNaN(precio) &&
-      precio >= VALIDATION_RULES.MIN_PRICE &&
-      precio <= VALIDATION_RULES.MAX_PRICE &&
-      !nombreDuplicado &&
-      !validandoNombre
-    );
+    const validaciones = {
+      tieneNombre: formData.nombre?.trim().length > 0,
+      tieneDescripcion: formData.descripcion?.trim().length > 0,
+      precioValido: !isNaN(precio) && precio >= VALIDATION_RULES.MIN_PRICE && precio <= VALIDATION_RULES.MAX_PRICE,
+      sinDuplicado: !nombreDuplicado,
+      noValidando: !validandoNombre
+    };
+    
+    const esValido = Object.values(validaciones).every(Boolean);
+    
+    if (!esValido) {
+      console.log('❌ Validación formulario:', validaciones);
+    }
+    
+    return esValido;
   };
 
   if (!abierto) return null;
