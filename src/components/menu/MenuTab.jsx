@@ -4,9 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, FolderPlus } from 'lucide-react';
 import MenuCategory from './MenuCategory';
 import PlatoModal from './PlatoModal';
+import CategoriaModal from './CategoriaModal';
 import { useAppContext } from '../../context/AppContext';
 import { useMessage } from '../../hooks/useMessage';
 
@@ -22,6 +23,11 @@ function MenuTab({ menu }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoModal, setModoModal] = useState('crear');
   const [platoSeleccionado, setPlatoSeleccionado] = useState(null);
+  
+  // Estados para el modal de categorías
+  const [modalCategoriaAbierto, setModalCategoriaAbierto] = useState(false);
+  const [modoCategoriaModal, setModoCategoriaModal] = useState('crear');
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   
   const { actualizarDatosEspejo } = useAppContext();
   const { mostrarMensaje } = useMessage();
@@ -169,11 +175,111 @@ function MenuTab({ menu }) {
   };
 
   /**
-   * Maneja el guardado del modal
+   * Maneja el guardado del modal de platos
    */
   const manejarGuardadoModal = async () => {
     await actualizarDatosEspejo();
     setModalAbierto(false);
+  };
+
+  /**
+   * Abre el modal para crear una nueva categoría
+   */
+  const abrirModalCrearCategoria = () => {
+    setModoCategoriaModal('crear');
+    setCategoriaSeleccionada(null);
+    setModalCategoriaAbierto(true);
+  };
+
+  /**
+   * Abre el modal para editar una categoría
+   * @param {Object} categoria - Categoría a editar
+   */
+  const abrirModalEditarCategoria = (categoria) => {
+    setModoCategoriaModal('editar');
+    setCategoriaSeleccionada(categoria);
+    setModalCategoriaAbierto(true);
+  };
+
+  /**
+   * Elimina una categoría con confirmación
+   * @param {Object} categoria - Categoría a eliminar
+   */
+  const eliminarCategoria = async (categoria) => {
+    // Contar platos en la categoría
+    const totalPlatos = categoria.platos?.length || 0;
+    
+    let confirmacion;
+    if (totalPlatos > 0) {
+      confirmacion = window.confirm(
+        `¿Estás seguro de que quieres eliminar la categoría "${categoria.nombre}"?\n\n` +
+        `Esta categoría contiene ${totalPlatos} plato${totalPlatos > 1 ? 's' : ''}.\n` +
+        `Si continúas, se eliminarán también todos los platos de esta categoría.\n\n` +
+        `Esta acción no se puede deshacer.`
+      );
+    } else {
+      confirmacion = window.confirm(
+        `¿Estás seguro de que quieres eliminar la categoría "${categoria.nombre}"?`
+      );
+    }
+    
+    if (!confirmacion) return;
+
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+      const queryParams = totalPlatos > 0 ? '?forzar=true' : '';
+      
+      const response = await fetch(`${API_URL}/admin/menu/categoria/${categoria.id}${queryParams}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.exito) {
+        mostrarMensaje(data.mensaje || 'Categoría eliminada correctamente', 'success');
+        await actualizarDatosEspejo();
+        
+        // Si la categoría eliminada estaba expandida, contraer
+        if (categoriaExpandida === categoria.id) {
+          setCategoriaExpandida(null);
+        }
+      } else {
+        // Si el servidor requiere confirmación adicional
+        if (data.requiereForzar) {
+          const forzarConfirmacion = window.confirm(
+            `${data.mensaje}\n\n¿Deseas eliminar la categoría y todos sus platos?`
+          );
+          
+          if (forzarConfirmacion) {
+            // Intentar de nuevo con forzar=true
+            const response2 = await fetch(`${API_URL}/admin/menu/categoria/${categoria.id}?forzar=true`, {
+              method: 'DELETE'
+            });
+            const data2 = await response2.json();
+            
+            if (data2.exito) {
+              mostrarMensaje(data2.mensaje || 'Categoría eliminada correctamente', 'success');
+              await actualizarDatosEspejo();
+            } else {
+              mostrarMensaje(data2.mensaje || 'Error al eliminar categoría', 'error');
+            }
+          }
+        } else {
+          mostrarMensaje(data.mensaje || 'Error al eliminar categoría', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error eliminando categoría:', error);
+      mostrarMensaje('Error al eliminar categoría: ' + error.message, 'error');
+    }
+  };
+
+  /**
+   * Maneja el guardado del modal de categorías
+   */
+  const manejarGuardadoCategoriaModal = async () => {
+    await actualizarDatosEspejo();
+    setModalCategoriaAbierto(false);
   };
 
   const stats = calcularEstadisticas();
@@ -210,6 +316,15 @@ function MenuTab({ menu }) {
               />
             </div>
             
+            {/* Botón nueva categoría */}
+            <button
+              onClick={abrirModalCrearCategoria}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+            >
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Nueva Categoría
+            </button>
+            
             {/* Botón nuevo plato */}
             <button
               onClick={abrirModalCrear}
@@ -241,6 +356,8 @@ function MenuTab({ menu }) {
                 expandida={categoriaExpandida === categoria.id}
                 onToggleExpand={() => toggleCategoria(categoria.id)}
                 mostrarVacio={!busqueda}
+                onEditarCategoria={abrirModalEditarCategoria}
+                onEliminarCategoria={eliminarCategoria}
               />
             ))}
           </div>
@@ -255,6 +372,15 @@ function MenuTab({ menu }) {
         categorias={menu.categorias || []}
         onCerrar={() => setModalAbierto(false)}
         onGuardar={manejarGuardadoModal}
+      />
+
+      {/* Modal de categoría */}
+      <CategoriaModal
+        abierto={modalCategoriaAbierto}
+        modo={modoCategoriaModal}
+        categoria={categoriaSeleccionada}
+        onCerrar={() => setModalCategoriaAbierto(false)}
+        onGuardar={manejarGuardadoCategoriaModal}
       />
     </div>
   );

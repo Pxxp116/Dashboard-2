@@ -139,16 +139,50 @@ class MenuService {
   }
 
   /**
-   * Elimina una categoría (solo si no tiene platos)
+   * Elimina una categoría
    * @param {number} categoriaId - ID de la categoría
-   * @returns {Promise<{exito: boolean, mensaje: string}>}
+   * @param {boolean} [forzar=false] - Si true, elimina también los platos asociados
+   * @returns {Promise<{exito: boolean, mensaje: string, platosEliminados?: number}>}
    */
-  async eliminarCategoria(categoriaId) {
+  async eliminarCategoria(categoriaId, forzar = false) {
     try {
-      const response = await apiClient.delete(`/admin/menu/categoria/${categoriaId}`);
+      const queryParams = forzar ? '?forzar=true' : '';
+      const response = await apiClient.delete(`/admin/menu/categoria/${categoriaId}${queryParams}`);
       return response;
     } catch (error) {
       console.error('Error eliminando categoría:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica si existe una categoría con el mismo nombre
+   * @param {string} nombre - Nombre de la categoría a verificar
+   * @param {number} [excludeId] - ID de categoría a excluir (para edición)
+   * @returns {Promise<{exito: boolean, existe: boolean}>}
+   */
+  async verificarCategoriaDuplicada(nombre, excludeId = null) {
+    try {
+      // Esta funcionalidad se maneja en el servidor al crear/actualizar
+      // Por ahora retornamos siempre false y dejamos que el servidor valide
+      return { exito: true, existe: false };
+    } catch (error) {
+      console.error('Error verificando categoría duplicada:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene información detallada de una categoría
+   * @param {number} categoriaId - ID de la categoría
+   * @returns {Promise<{exito: boolean, categoria: Object}>}
+   */
+  async obtenerCategoria(categoriaId) {
+    try {
+      const response = await apiClient.get(`/admin/menu/categoria/${categoriaId}`);
+      return response;
+    } catch (error) {
+      console.error('Error obteniendo categoría:', error);
       throw error;
     }
   }

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit2, Trash2 } from 'lucide-react';
 import DishCard from './DishCard';
 
 /**
@@ -17,6 +17,8 @@ import DishCard from './DishCard';
  * @param {boolean} props.expandida - Si la categoría está expandida
  * @param {Function} props.onToggleExpand - Callback para expandir/contraer
  * @param {boolean} props.mostrarVacio - Si mostrar cuando no hay platos
+ * @param {Function} props.onEditarCategoria - Callback para editar categoría
+ * @param {Function} props.onEliminarCategoria - Callback para eliminar categoría
  * @returns {JSX.Element|null} Componente MenuCategory
  */
 function MenuCategory({ 
@@ -26,7 +28,9 @@ function MenuCategory({
   onEliminarPlato,
   expandida, 
   onToggleExpand,
-  mostrarVacio = true 
+  mostrarVacio = true,
+  onEditarCategoria,
+  onEliminarCategoria
 }) {
   // No mostrar si no hay platos y no se debe mostrar vacío
   if (!mostrarVacio && (!categoria.platos || categoria.platos.length === 0)) {
@@ -35,6 +39,28 @@ function MenuCategory({
 
   const cantidadPlatos = categoria.platos?.length || 0;
   const platosDisponibles = categoria.platos?.filter(p => p.disponible).length || 0;
+
+  /**
+   * Maneja el clic en editar categoría
+   * @param {Object} e - Evento del clic
+   */
+  const manejarEditarCategoria = (e) => {
+    e.stopPropagation(); // Evitar que se expanda/contraiga
+    if (onEditarCategoria) {
+      onEditarCategoria(categoria);
+    }
+  };
+
+  /**
+   * Maneja el clic en eliminar categoría
+   * @param {Object} e - Evento del clic
+   */
+  const manejarEliminarCategoria = (e) => {
+    e.stopPropagation(); // Evitar que se expanda/contraiga
+    if (onEliminarCategoria) {
+      onEliminarCategoria(categoria);
+    }
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -52,16 +78,50 @@ function MenuCategory({
               ({platosDisponibles}/{cantidadPlatos} disponibles)
             </span>
           </div>
-          <button
-            className="p-1 hover:bg-gray-200 rounded transition-colors"
-            aria-label={expandida ? 'Contraer' : 'Expandir'}
-          >
-            {expandida ? (
-              <ChevronUp className="w-5 h-5 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-600" />
+          
+          <div className="flex items-center space-x-2">
+            {/* Botones de acción de categoría */}
+            {(onEditarCategoria || onEliminarCategoria) && (
+              <div className="flex items-center space-x-1 mr-2">
+                {onEditarCategoria && (
+                  <button
+                    onClick={manejarEditarCategoria}
+                    className="p-1.5 hover:bg-gray-200 rounded transition-colors text-gray-600 hover:text-blue-600"
+                    title="Editar categoría"
+                    aria-label="Editar categoría"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
+                
+                {onEliminarCategoria && (
+                  <button
+                    onClick={manejarEliminarCategoria}
+                    className="p-1.5 hover:bg-gray-200 rounded transition-colors text-gray-600 hover:text-red-600"
+                    title={`Eliminar categoría${cantidadPlatos > 0 ? ` (${cantidadPlatos} platos)` : ''}`}
+                    aria-label="Eliminar categoría"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                
+                {/* Separador visual */}
+                <div className="w-px h-4 bg-gray-300 mx-1"></div>
+              </div>
             )}
-          </button>
+            
+            {/* Botón expandir/contraer */}
+            <button
+              className="p-1 hover:bg-gray-200 rounded transition-colors"
+              aria-label={expandida ? 'Contraer' : 'Expandir'}
+            >
+              {expandida ? (
+                <ChevronUp className="w-5 h-5 text-gray-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+          </div>
         </div>
         
         {/* Descripción de la categoría si existe */}
