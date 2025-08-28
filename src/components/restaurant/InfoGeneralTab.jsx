@@ -47,8 +47,23 @@ function InfoGeneralTab() {
       const data = await response.json();
       
       if (data.exito) {
-        setRestaurante(data.restaurante);
-        setDatosEditados(data.restaurante);
+        // Normalizar datos para asegurar que todos los campos sean strings
+        const restauranteNormalizado = {
+          nombre: data.restaurante.nombre || '',
+          tipo_cocina: data.restaurante.tipo_cocina || '',
+          direccion: data.restaurante.direccion || '',
+          telefono: data.restaurante.telefono || '',
+          email: data.restaurante.email || '',
+          web: data.restaurante.web || '',
+          descripcion: data.restaurante.descripcion || '',
+          facebook: data.restaurante.facebook || '',
+          instagram: data.restaurante.instagram || '',
+          twitter: data.restaurante.twitter || '',
+          tripadvisor: data.restaurante.tripadvisor || ''
+        };
+        
+        setRestaurante(restauranteNormalizado);
+        setDatosEditados(restauranteNormalizado);
       }
     } catch (error) {
       console.error('Error cargando información:', error);
@@ -64,18 +79,48 @@ function InfoGeneralTab() {
   const guardarCambios = async () => {
     setLoading(true);
     try {
+      // Preparar datos asegurando que todos los campos sean strings
+      const datosParaEnviar = {
+        nombre: datosEditados.nombre || '',
+        tipo_cocina: datosEditados.tipo_cocina || '',
+        direccion: datosEditados.direccion || '',
+        telefono: datosEditados.telefono || '',
+        email: datosEditados.email || '',
+        web: datosEditados.web || '',
+        descripcion: datosEditados.descripcion || '',
+        facebook: datosEditados.facebook || '',
+        instagram: datosEditados.instagram || '',
+        twitter: datosEditados.twitter || '',
+        tripadvisor: datosEditados.tripadvisor || ''
+      };
+      
       const response = await fetch(`${API_URL}/admin/restaurante`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(datosEditados)
+        body: JSON.stringify(datosParaEnviar)
       });
       
       const data = await response.json();
       
       if (data.exito) {
-        setRestaurante(data.restaurante);
+        // Normalizar la respuesta también
+        const restauranteNormalizado = {
+          nombre: data.restaurante.nombre || '',
+          tipo_cocina: data.restaurante.tipo_cocina || '',
+          direccion: data.restaurante.direccion || '',
+          telefono: data.restaurante.telefono || '',
+          email: data.restaurante.email || '',
+          web: data.restaurante.web || '',
+          descripcion: data.restaurante.descripcion || '',
+          facebook: data.restaurante.facebook || '',
+          instagram: data.restaurante.instagram || '',
+          twitter: data.restaurante.twitter || '',
+          tripadvisor: data.restaurante.tripadvisor || ''
+        };
+        
+        setRestaurante(restauranteNormalizado);
         setModoEdicion(false);
         mostrarMensaje('Información actualizada correctamente', 'success');
       } else {
