@@ -8,18 +8,23 @@ import MenuTab from './components/menu/MenuTab';
 import HorariosTab from './components/schedules/HorariosTab';
 import ReservasTab from './components/reservations/ReservasTab';
 import { useAppContext } from './context/AppContext';
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
+
+// Importar configuración dinámica y features
+import { getApiConfig, useFeatures, logFeatureConfig } from './config/features';
+import FeatureWrapper from './components/common/FeatureWrapper';
+
+// Configuración dinámica de API
+const apiConfig = getApiConfig();
+const API_URL = apiConfig.BASE_URL;
 
 // Log para debug (solo en desarrollo)
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 Configuración API:');
-  console.log('- API_URL:', API_URL);
-  console.log('- REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  logFeatureConfig();
 }
 
 function GastroBotDashboard() {
   const { datosEspejo, actualizarDatosEspejo } = useAppContext();
+  const { features } = useFeatures();
   const [activeTab, setActiveTab] = useState('inicio');
   const [estadoSistema, setEstadoSistema] = useState(null);
   // Obtener datos del contexto
@@ -424,15 +429,15 @@ function GastroBotDashboard() {
           <div className="flex space-x-8">
             
               {[
-      { id: 'inicio', icon: Home, label: 'Inicio' },
-      { id: 'info', icon: Building, label: 'Información' },
-      { id: 'horarios', icon: Clock, label: 'Horarios' },
-      { id: 'reservas', icon: Calendar, label: 'Reservas' },
-      { id: 'mesas', icon: Users, label: 'Mesas' },
-      { id: 'menu', icon: Menu, label: 'Menú' },
-      { id: 'politicas', icon: Settings, label: 'Políticas' }
+      { id: 'inicio', icon: Home, label: 'Inicio', feature: null },
+      { id: 'info', icon: Building, label: 'Información', feature: null },
+      { id: 'horarios', icon: Clock, label: 'Horarios', feature: null },
+      { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
+      { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
+      { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
+      { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
 
-            ].map((item) => (
+            ].filter(item => !item.feature || features[item.feature]).map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
@@ -819,7 +824,7 @@ function GastroBotDashboard() {
         )}
 
         {activeTab === 'horarios' && <HorariosTab />}
-        {activeTab === 'reservas' && (
+        {activeTab === 'reservas' && features.RESERVATIONS && (
           <ReservasTab 
             reservas={reservas} 
             loading={loading}
@@ -828,9 +833,9 @@ function GastroBotDashboard() {
             onEliminarReserva={eliminarReserva}
           />
         )}
-        {activeTab === 'mesas' && <MesasTab mesas={mesas} />}
-        {activeTab === 'menu' && <MenuTab menu={menu} />}
-        {activeTab === 'politicas' && <PoliciesTab politicas={politicas} />}
+        {activeTab === 'mesas' && features.TABLES && <MesasTab mesas={mesas} />}
+        {activeTab === 'menu' && features.MENU && <MenuTab menu={menu} />}
+        {activeTab === 'politicas' && features.POLICIES && <PoliciesTab politicas={politicas} />}
    </main>
 
       {/* Modal Nueva Reserva */}

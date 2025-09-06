@@ -2,13 +2,10 @@
  * @fileoverview Constantes y configuración global del sistema GastroBot
  */
 
-// Configuración de la API
-export const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api',
-  TIMEOUT: 10000, // 10 segundos
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000 // 1 segundo
-};
+import { getApiConfig } from '../../config/features';
+
+// Configuración de la API - ahora usando configuración dinámica
+export const API_CONFIG = getApiConfig();
 
 // Intervalos de actualización
 export const UPDATE_INTERVALS = {

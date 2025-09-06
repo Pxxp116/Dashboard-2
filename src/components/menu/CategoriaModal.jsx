@@ -6,6 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, Loader2 } from 'lucide-react';
 import { useMessage } from '../../hooks/useMessage';
+import { getApiConfig } from '../../config/features';
+
+const API_CONFIG = getApiConfig();
 
 /**
  * Modal para gestionar categorías del menú
@@ -123,11 +126,10 @@ function CategoriaModal({
     setGuardando(true);
     
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       
       let response;
       if (modo === 'crear') {
-        response = await fetch(`${API_URL}/admin/menu/categoria`, {
+        response = await fetch(`${API_CONFIG.BASE_URL}/admin/menu/categoria`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -138,7 +140,7 @@ function CategoriaModal({
         });
       } else {
         // Modo editar
-        response = await fetch(`${API_URL}/admin/menu/categoria/${categoria.id}`, {
+        response = await fetch(`${API_CONFIG.BASE_URL}/admin/menu/categoria/${categoria.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

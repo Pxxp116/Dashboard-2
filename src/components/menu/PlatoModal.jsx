@@ -6,8 +6,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, RefreshCw, Plus, Trash2, Upload } from 'lucide-react';
 import { VALIDATION_RULES } from '../../services/utils/constants';
+import { getApiConfig } from '../../config/features';
 import { useMessage } from '../../hooks/useMessage';
 import { useAppContext } from '../../context/AppContext';
+
+// Configuración de API dinámica
+const API_CONFIG = getApiConfig();
 
 /**
  * Modal para gestionar platos
@@ -138,8 +142,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
 
     setValidandoNombre(true);
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
-      const response = await fetch(`${API_URL}/admin/menu/plato/validar`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/admin/menu/plato/validar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -236,8 +239,7 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
       const formDataImg = new FormData();
       formDataImg.append('imagen', file);
       
-      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
-      const response = await fetch(`${API_URL}/admin/menu/plato/imagen`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/admin/menu/plato/imagen`, {
         method: 'POST',
         body: formDataImg
       });
@@ -308,10 +310,9 @@ function PlatoModal({ abierto, modo = 'crear', plato, categorias, categoriaInici
     
     setGuardando(true);
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
       const url = modo === 'crear' 
-        ? `${API_URL}/admin/menu/plato`
-        : `${API_URL}/admin/menu/plato/${plato.id}`;
+        ? `${API_CONFIG.BASE_URL}/admin/menu/plato`
+        : `${API_CONFIG.BASE_URL}/admin/menu/plato/${plato.id}`;
       
       const method = modo === 'crear' ? 'POST' : 'PUT';
       
