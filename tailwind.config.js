@@ -4,8 +4,19 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
     "./public/index.html",
   ],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
+      // Enable opacity modifiers for all colors
+      opacity: {
+        '12': '0.12',
+        '15': '0.15',
+        '25': '0.25',
+        '30': '0.30',
+        '40': '0.40',
+      },
       fontFamily: {
         'poppins': ['Poppins', 'system-ui', 'sans-serif'],
         'inter': ['Inter', 'system-ui', 'sans-serif'],
@@ -99,6 +110,28 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    // Glass effect classes with opacity
+    'bg-white/10',
+    'bg-white/12',
+    'bg-white/15',
+    'bg-white/20',
+    'bg-white/25',
+    'bg-white/30',
+    'border-white/10',
+    'border-white/20',
+    'border-white/25',
+    'border-white/30',
+    'border-white/40',
+    // Backdrop blur classes
+    'backdrop-blur-2xl',
+    'backdrop-blur-3xl',
+    // Animation classes
+    'animate-scale-in',
+    'animate-fade-in',
+    'animate-slide-up',
+    'animate-float',
+  ],
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),

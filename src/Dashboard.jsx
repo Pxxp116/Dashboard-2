@@ -26,8 +26,8 @@ import {
 // Componentes de la UI moderna
 import ThemeSwitcher from './components/theme/ThemeSwitcher';
 import { useTheme } from './context/ThemeContext';
-import DashboardLayout from './components/layout/DashboardLayout.jsx';
-import Inicio from './pages/Inicio.jsx';
+import DashboardLayout from './components/layout/DashboardLayout';
+import Inicio from './pages/Inicio';
 
 // Componentes de las páginas
 import MesasTab from './components/tables/MesasTab';
@@ -762,226 +762,225 @@ function GastroBotDashboard() {
         {activeTab === 'mesas' && features.TABLES && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && features.MENU && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && features.POLICIES && <PoliciesTab politicas={politicas} />}
+
+        {/* Modal Nueva Reserva */}
+        {modalReserva && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Nueva Reserva</h3>
+                <button
+                  onClick={() => setModalReserva(false)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    value={nuevaReserva.nombre}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, nombre: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nombre del cliente"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Teléfono</label>
+                  <input
+                    type="tel"
+                    value={nuevaReserva.telefono}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, telefono: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="+34 600 000 000"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Fecha</label>
+                    <input
+                      type="date"
+                      value={nuevaReserva.fecha}
+                      onChange={(e) => setNuevaReserva({...nuevaReserva, fecha: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Hora</label>
+                    <input
+                      type="time"
+                      value={nuevaReserva.hora}
+                      onChange={(e) => setNuevaReserva({...nuevaReserva, hora: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Personas</label>
+                  <select
+                    value={nuevaReserva.personas}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, personas: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <option key={n} value={n}>{n} {n === 1 ? 'persona' : 'personas'}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Notas (opcional)</label>
+                  <textarea
+                    value={nuevaReserva.notas}
+                    onChange={(e) => setNuevaReserva({...nuevaReserva, notas: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="3"
+                    placeholder="Alergias, celebraciones, preferencias..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setModalReserva(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={crearReserva}
+                  disabled={loading || !nuevaReserva.nombre || !nuevaReserva.telefono}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Crear Reserva
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Nuevo Plato */}
+        {modalPlato && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Nuevo Plato</h3>
+                <button
+                  onClick={() => setModalPlato(false)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Categoría</label>
+                  <select
+                    value={nuevoPlato.categoria_id}
+                    onChange={(e) => setNuevoPlato({...nuevoPlato, categoria_id: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {menu.categorias.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nombre del Plato</label>
+                  <input
+                    type="text"
+                    value={nuevoPlato.nombre}
+                    onChange={(e) => setNuevoPlato({...nuevoPlato, nombre: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Ej: Paella Valenciana"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Descripción</label>
+                  <textarea
+                    value={nuevoPlato.descripcion}
+                    onChange={(e) => setNuevoPlato({...nuevoPlato, descripcion: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    rows="3"
+                    placeholder="Descripción breve del plato..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Precio (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={nuevoPlato.precio}
+                    onChange={(e) => setNuevoPlato({...nuevoPlato, precio: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="12.50"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="disponible"
+                    checked={nuevoPlato.disponible}
+                    onChange={(e) => setNuevoPlato({...nuevoPlato, disponible: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label htmlFor="disponible" className="text-sm font-medium">
+                    Disponible inmediatamente
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setModalPlato(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={crearPlato}
+                  disabled={loading || !nuevoPlato.nombre || !nuevoPlato.precio}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Crear Plato
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </DashboardLayout>
-
-      {/* Modal Nueva Reserva */}
-      {modalReserva && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Nueva Reserva</h3>
-              <button
-                onClick={() => setModalReserva(false)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre</label>
-                <input
-                  type="text"
-                  value={nuevaReserva.nombre}
-                  onChange={(e) => setNuevaReserva({...nuevaReserva, nombre: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nombre del cliente"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Teléfono</label>
-                <input
-                  type="tel"
-                  value={nuevaReserva.telefono}
-                  onChange={(e) => setNuevaReserva({...nuevaReserva, telefono: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+34 600 000 000"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Fecha</label>
-                  <input
-                    type="date"
-                    value={nuevaReserva.fecha}
-                    onChange={(e) => setNuevaReserva({...nuevaReserva, fecha: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Hora</label>
-                  <input
-                    type="time"
-                    value={nuevaReserva.hora}
-                    onChange={(e) => setNuevaReserva({...nuevaReserva, hora: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Personas</label>
-                <select
-                  value={nuevaReserva.personas}
-                  onChange={(e) => setNuevaReserva({...nuevaReserva, personas: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                    <option key={n} value={n}>{n} {n === 1 ? 'persona' : 'personas'}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Notas (opcional)</label>
-                <textarea
-                  value={nuevaReserva.notas}
-                  onChange={(e) => setNuevaReserva({...nuevaReserva, notas: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="3"
-                  placeholder="Alergias, celebraciones, preferencias..."
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setModalReserva(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={crearReserva}
-                disabled={loading || !nuevaReserva.nombre || !nuevaReserva.telefono}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Crear Reserva
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Nuevo Plato */}
-      {modalPlato && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Nuevo Plato</h3>
-              <button
-                onClick={() => setModalPlato(false)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Categoría</label>
-                <select
-                  value={nuevoPlato.categoria_id}
-                  onChange={(e) => setNuevoPlato({...nuevoPlato, categoria_id: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  {menu.categorias.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre del Plato</label>
-                <input
-                  type="text"
-                  value={nuevoPlato.nombre}
-                  onChange={(e) => setNuevoPlato({...nuevoPlato, nombre: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Ej: Paella Valenciana"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Descripción</label>
-                <textarea
-                  value={nuevoPlato.descripcion}
-                  onChange={(e) => setNuevoPlato({...nuevoPlato, descripcion: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  rows="3"
-                  placeholder="Descripción breve del plato..."
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Precio (€)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={nuevoPlato.precio}
-                  onChange={(e) => setNuevoPlato({...nuevoPlato, precio: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="12.50"
-                />
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="disponible"
-                  checked={nuevoPlato.disponible}
-                  onChange={(e) => setNuevoPlato({...nuevoPlato, disponible: e.target.checked})}
-                  className="mr-2"
-                />
-                <label htmlFor="disponible" className="text-sm font-medium">
-                  Disponible inmediatamente
-                </label>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setModalPlato(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={crearPlato}
-                disabled={loading || !nuevoPlato.nombre || !nuevoPlato.precio}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Crear Plato
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
