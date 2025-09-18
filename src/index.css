@@ -6,7 +6,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
 /* Importar sistema de temas glassmorphism */
-@import './themes.css';
+@import './styles/themes.css';
 
 /* ================================
    VARIABLES CSS - DESIGN TOKENS
