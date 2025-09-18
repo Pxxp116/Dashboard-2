@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building, Edit2 } from 'lucide-react';
+import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building, Edit2, ShoppingBag } from 'lucide-react';
 
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
@@ -7,6 +7,7 @@ import PoliciesTab from './components/policies/PoliciesTab';
 import MenuTab from './components/menu/MenuTab';
 import HorariosTab from './components/schedules/HorariosTab';
 import ReservasTab from './components/reservations/ReservasTab';
+import PedidosTab from './components/orders/PedidosTab';
 import { useAppContext } from './context/AppContext';
 
 // Importar configuración dinámica y features
@@ -433,6 +434,7 @@ function GastroBotDashboard() {
       { id: 'info', icon: Building, label: 'Información', feature: null },
       { id: 'horarios', icon: Clock, label: 'Horarios', feature: null },
       { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
+      { id: 'pedidos', icon: ShoppingBag, label: 'Pedidos', feature: null },
       { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
       { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
       { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
@@ -825,14 +827,15 @@ function GastroBotDashboard() {
 
         {activeTab === 'horarios' && <HorariosTab />}
         {activeTab === 'reservas' && features.RESERVATIONS && (
-          <ReservasTab 
-            reservas={reservas} 
+          <ReservasTab
+            reservas={reservas}
             loading={loading}
             onNuevaReserva={() => setModalReserva(true)}
             onCancelarReserva={cancelarReserva}
             onEliminarReserva={eliminarReserva}
           />
         )}
+        {activeTab === 'pedidos' && <PedidosTab />}
         {activeTab === 'mesas' && features.TABLES && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && features.MENU && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && features.POLICIES && <PoliciesTab politicas={politicas} />}
