@@ -218,31 +218,22 @@ function ThemeSwitcherPanel({
             <button
               key={themeOption.id}
               onClick={() => onThemeChange(themeOption.id)}
-              className={`relative group p-3 rounded-xl border-2 transition-all duration-200 ${
-                theme.colorScheme === themeOption.id
-                  ? 'border-current shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              style={{
-                borderColor: theme.colorScheme === themeOption.id ? themeOption.primary : undefined
-              }}
+              className={`theme-option ${theme.colorScheme === themeOption.id ? 'active' : ''}`}
               title={themeOption.description}
             >
-              {/* Preview del color */}
-              <div
-                className={`w-full h-8 rounded-lg mb-2 ${themeOption.preview}`}
-              />
+              {/* Preview con gradiente glassmorphism */}
+              <div className={`theme-preview ${themeOption.id}`} />
 
-              {/* Nombre del tema */}
-              <div className="text-xs font-medium text-gray-700 leading-tight">
+              {/* Nombre del tema con fuente moderna */}
+              <div className="text-xs font-semibold text-slate-700 leading-tight font-poppins">
                 {themeOption.name}
               </div>
 
-              {/* Indicador de selección */}
+              {/* Indicador de selección mejorado */}
               {theme.colorScheme === themeOption.id && (
                 <div
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                  style={{ backgroundColor: themeOption.primary }}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white shadow-lg animate-scale-in"
+                  style={{ background: themeOption.gradient }}
                 >
                   <Check className="w-3 h-3" />
                 </div>

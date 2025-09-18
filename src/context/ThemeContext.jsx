@@ -6,67 +6,46 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
-// Definición de temas disponibles
+// Definición de temas glassmorphism disponibles (3 temas principales)
 export const THEME_COLORS = {
   blue: {
     id: 'blue',
-    name: 'Azul Profesional',
-    description: 'Tema clásico y profesional',
-    primary: '#2563eb',
-    primaryLight: '#3b82f6',
-    primaryDark: '#1d4ed8',
-    gradient: 'from-blue-500 to-blue-700',
-    preview: 'bg-gradient-to-br from-blue-500 to-blue-700'
+    name: 'Azul Océano',
+    description: 'Profesional y confiable como el océano',
+    primary: '#3b82f6',
+    primaryLight: '#93c5fd',
+    primaryDark: '#2563eb',
+    gradient: 'linear-gradient(135deg, #93c5fd 0%, #2563eb 100%)',
+    gradientClass: 'bg-gradient-to-br from-blue-300 to-blue-600',
+    preview: 'theme-preview blue',
+    glassBg: 'rgba(59, 130, 246, 0.1)',
+    glassBorder: 'rgba(59, 130, 246, 0.2)'
+  },
+  violet: {
+    id: 'violet',
+    name: 'Violeta Místico',
+    description: 'Elegante y sofisticado',
+    primary: '#8b5cf6',
+    primaryLight: '#a78bfa',
+    primaryDark: '#6366f1',
+    gradient: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)',
+    gradientClass: 'bg-gradient-to-br from-violet-300 to-indigo-500',
+    preview: 'theme-preview violet',
+    glassBg: 'rgba(139, 92, 246, 0.1)',
+    glassBorder: 'rgba(139, 92, 246, 0.2)'
   },
   emerald: {
     id: 'emerald',
     name: 'Verde Natura',
-    description: 'Fresco y natural',
-    primary: '#059669',
-    primaryLight: '#10b981',
-    primaryDark: '#047857',
-    gradient: 'from-emerald-500 to-emerald-700',
-    preview: 'bg-gradient-to-br from-emerald-500 to-emerald-700'
-  },
-  violet: {
-    id: 'violet',
-    name: 'Violeta Elegante',
-    description: 'Moderno y sofisticado',
-    primary: '#7c3aed',
-    primaryLight: '#8b5cf6',
-    primaryDark: '#6d28d9',
-    gradient: 'from-violet-500 to-violet-700',
-    preview: 'bg-gradient-to-br from-violet-500 to-violet-700'
-  },
-  rose: {
-    id: 'rose',
-    name: 'Rosa Moderno',
-    description: 'Cálido y acogedor',
-    primary: '#e11d48',
-    primaryLight: '#f43f5e',
-    primaryDark: '#be123c',
-    gradient: 'from-rose-500 to-rose-700',
-    preview: 'bg-gradient-to-br from-rose-500 to-rose-700'
-  },
-  orange: {
-    id: 'orange',
-    name: 'Naranja Energético',
-    description: 'Vibrante y dinámico',
-    primary: '#ea580c',
-    primaryLight: '#f97316',
-    primaryDark: '#c2410c',
-    gradient: 'from-orange-500 to-orange-700',
-    preview: 'bg-gradient-to-br from-orange-500 to-orange-700'
-  },
-  cyan: {
-    id: 'cyan',
-    name: 'Cyan Cristalino',
-    description: 'Fresco y tecnológico',
-    primary: '#0891b2',
-    primaryLight: '#06b6d4',
-    primaryDark: '#0e7490',
-    gradient: 'from-cyan-500 to-cyan-700',
-    preview: 'bg-gradient-to-br from-cyan-500 to-cyan-700'
+    description: 'Fresco y natural como un bosque',
+    primary: '#10b981',
+    primaryLight: '#6ee7b7',
+    primaryDark: '#16a34a',
+    gradient: 'linear-gradient(135deg, #6ee7b7 0%, #16a34a 100%)',
+    gradientClass: 'bg-gradient-to-br from-emerald-300 to-green-600',
+    preview: 'theme-preview emerald',
+    glassBg: 'rgba(16, 185, 129, 0.1)',
+    glassBorder: 'rgba(16, 185, 129, 0.2)'
   }
 };
 
@@ -118,7 +97,7 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   /**
-   * Aplicar variables CSS del tema al DOM
+   * Aplicar variables CSS del tema al DOM para glassmorphism
    */
   const applyThemeToDOM = (currentTheme) => {
     const root = document.documentElement;
@@ -126,30 +105,62 @@ export function ThemeProvider({ children }) {
 
     if (!colorConfig) return;
 
-    // Aplicar colores del tema
-    root.style.setProperty('--color-theme-primary', colorConfig.primary);
-    root.style.setProperty('--color-theme-primary-light', colorConfig.primaryLight);
-    root.style.setProperty('--color-theme-primary-dark', colorConfig.primaryDark);
+    // Aplicar colores del tema como CSS Custom Properties
+    root.style.setProperty('--theme-primary', colorConfig.primary);
+    root.style.setProperty('--theme-primary-light', colorConfig.primaryLight);
+    root.style.setProperty('--theme-primary-dark', colorConfig.primaryDark);
+    root.style.setProperty('--theme-gradient', colorConfig.gradient);
+    root.style.setProperty('--theme-glass-bg', colorConfig.glassBg);
+    root.style.setProperty('--theme-glass-border', colorConfig.glassBorder);
 
     // Aplicar modo (claro/oscuro)
     const isDark = currentTheme.mode === 'dark' ||
       (currentTheme.mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+    // Aplicar data attributes para CSS targeting
     root.setAttribute('data-theme', currentTheme.colorScheme);
     root.setAttribute('data-mode', isDark ? 'dark' : 'light');
     root.setAttribute('data-glassmorphism', currentTheme.glassmorphism ? 'enabled' : 'disabled');
     root.setAttribute('data-animations', currentTheme.animations ? 'enabled' : 'disabled');
 
-    // Aplicar clases dinámicas
-    document.body.className = document.body.className
-      .replace(/theme-\w+/g, '')
-      .replace(/mode-\w+/g, '') +
-      ` theme-${currentTheme.colorScheme} mode-${isDark ? 'dark' : 'light'}`;
+    // Aplicar clases dinámicas al body
+    const baseClasses = document.body.className
+      .split(' ')
+      .filter(cls => !cls.startsWith('theme-') && !cls.startsWith('mode-'))
+      .join(' ');
+
+    document.body.className = `${baseClasses} theme-${currentTheme.colorScheme} mode-${isDark ? 'dark' : 'light'}`.trim();
+
+    // Guardar configuración en localStorage con formato actualizado
+    try {
+      localStorage.setItem('gastrobot-theme-config', JSON.stringify({
+        ...currentTheme,
+        appliedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.warn('No se pudo guardar la configuración del tema:', error);
+    }
 
     // Notificar cambio de tema a otros componentes
     window.dispatchEvent(new CustomEvent('theme-changed', {
-      detail: { theme: currentTheme, isDark }
+      detail: {
+        theme: currentTheme,
+        colorConfig,
+        isDark,
+        timestamp: Date.now()
+      }
     }));
+
+    // Debug info en development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎨 Tema aplicado:', {
+        colorScheme: currentTheme.colorScheme,
+        name: colorConfig.name,
+        isDark,
+        glassmorphism: currentTheme.glassmorphism,
+        animations: currentTheme.animations
+      });
+    }
   };
 
   /**

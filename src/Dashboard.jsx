@@ -323,74 +323,77 @@ function GastroBotDashboard() {
     }
   };
 
-  // Componente de Estado del Sistema con glassmorphism
+  // Componente de Estado del Sistema con glassmorphism moderno
   const EstadoSistema = () => {
-    if (!estadoSistema) return null;
+    if (!estadoSistema) return (
+      <div className="grid-stats">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="loading-skeleton h-32"></div>
+        ))}
+      </div>
+    );
+
+    const estadisticas = [
+      {
+        title: 'Reservas Hoy',
+        value: estadoSistema.reservas_hoy || 0,
+        subtitle: `${estadoSistema.mesas_ocupadas || 0}/${estadoSistema.mesas_totales || 0} mesas ocupadas`,
+        icon: Calendar,
+        trend: estadoSistema.reservas_hoy > (estadoSistema.reservas_ayer || 0) ? 'positive' : 'neutral',
+        change: estadoSistema.reservas_ayer ? `+${estadoSistema.reservas_hoy - (estadoSistema.reservas_ayer || 0)}` : null
+      },
+      {
+        title: 'Ocupación Actual',
+        value: `${Math.round((estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100) || 0}%`,
+        subtitle: 'Capacidad utilizada',
+        icon: Users,
+        trend: (estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) > 0.7 ? 'positive' : 'neutral'
+      },
+      {
+        title: 'Próximas Reservas',
+        value: estadoSistema.proximas_reservas?.length || 0,
+        subtitle: 'En las próximas 2 horas',
+        icon: Clock,
+        trend: 'neutral'
+      },
+      {
+        title: 'Ingresos Estimados',
+        value: `€${(estadoSistema.ingresos_estimados || 0).toFixed(0)}`,
+        subtitle: 'Hoy',
+        icon: BarChart3,
+        trend: 'positive'
+      }
+    ];
 
     return (
-      <Card glass={true} className="animate-glass-float">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center glass-strong"
-              style={{ backgroundColor: currentThemeConfig?.primary + '20' }}
-            >
-              <AlertCircle className="w-5 h-5" style={{ color: currentThemeConfig?.primary }} />
-            </div>
-            <div>
-              <CardTitle>Estado del Sistema</CardTitle>
-              <CardDescription>Métricas en tiempo real</CardDescription>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              cargarEstadoSistema();
-              actualizarDatosEspejo();
-            }}
-            className="glass-hover-glow"
+      <div className="grid-stats">
+        {estadisticas.map((stat, index) => (
+          <div
+            key={index}
+            className="stats-card group animate-scale-in"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            <RefreshCw className="w-5 h-5" />
-          </Button>
-        </CardHeader>
-
-        <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-2xl glass-gradient">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-600">Reservas Hoy</span>
-                <Calendar className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-3xl font-bold mb-2" style={{ color: currentThemeConfig?.primary }}>
-                {estadoSistema.reservas_hoy}
-              </p>
-              <p className="text-xs text-gray-500">
-                {estadoSistema.mesas_ocupadas}/{estadoSistema.mesas_totales} mesas ocupadas
-              </p>
+            {/* Icon */}
+            <div className="stats-icon">
+              <stat.icon className="w-6 h-6 text-white" />
             </div>
 
-            <div className="p-6 rounded-2xl glass-gradient">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-600">Ocupación</span>
-                <BarChart3 className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-3xl font-bold mb-3" style={{ color: currentThemeConfig?.primary }}>
-                {Math.round((estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100)}%
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${(estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100}%`,
-                    backgroundColor: currentThemeConfig?.primary
-                  }}
-                />
-              </div>
+            {/* Content */}
+            <div className="stats-content">
+              <div className="stats-title">{stat.value}</div>
+              <div className="stats-label">{stat.title}</div>
+              <div className="text-xs text-slate-500 mt-1">{stat.subtitle}</div>
             </div>
+
+            {/* Trend */}
+            {stat.change && (
+              <div className={`stats-change ${stat.trend}`}>
+                {stat.change}
+              </div>
+            )}
           </div>
-        </CardBody>
-      </Card>
+        ))}
+      </div>
     );
   };
 
@@ -455,54 +458,66 @@ function GastroBotDashboard() {
   // Removido TabPoliticas - usando PoliciesTab importado
 
   return (
-    <div className="min-h-screen bg-gray-25">
-      {/* Header glassmorphism */}
-      <header className="nav-glass border-b border-white/20 sticky top-0 z-40">
+    <div className="dashboard-container">
+      {/* Header Glassmorphism Moderno */}
+      <header className="dashboard-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div
-                className="h-10 w-10 rounded-xl flex items-center justify-center glass-strong"
-                style={{ backgroundColor: currentThemeConfig?.primary + '20' }}
-              >
-                <Coffee className="w-6 h-6" style={{ color: currentThemeConfig?.primary }} />
+          <div className="flex-between h-20">
+            {/* Logo y Branding */}
+            <div className="flex items-center gap-4">
+              <div className="stats-icon animate-float">
+                <Coffee className="w-7 h-7 text-white" />
               </div>
-              <div className="ml-3">
-                <h1 className="text-xl font-bold text-gray-900">GastroBot</h1>
-                <p className="text-xs text-gray-500">Dashboard Admin</p>
+              <div>
+                <h1 className="text-2xl font-bold font-poppins bg-theme-gradient bg-clip-text text-transparent">
+                  GastroBot
+                </h1>
+                <p className="text-sm text-slate-600 font-medium">Dashboard Administrador</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 px-3 py-1.5 glass rounded-full">
-                <CheckCircle className="w-4 h-4 text-success-600" />
-                <span className="text-xs font-medium text-success-700">Sistema Activo</span>
+            {/* Status y Controles */}
+            <div className="flex items-center gap-6">
+              {/* Status del Sistema */}
+              <div className="badge-success">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                <span>Sistema Activo</span>
               </div>
 
-              <div className="h-8 w-px bg-white/20 hidden md:block"></div>
+              {/* Separador */}
+              <div className="h-8 w-px bg-white/30 hidden md:block"></div>
 
-              {/* Theme Switcher */}
+              {/* Theme Switcher con nuevo diseño */}
               <ThemeSwitcher trigger="button" />
 
-              <div className="flex items-center space-x-1 text-sm text-gray-600">
-                <span className="hidden sm:inline">
+              {/* Fecha Actual */}
+              <div className="glass-card px-4 py-2 hidden lg:flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-slate-600" />
+                <span className="text-sm font-medium text-slate-700">
                   {new Date().toLocaleDateString('es-ES', {
-                    weekday: 'short',
+                    weekday: 'long',
                     day: 'numeric',
-                    month: 'short'
+                    month: 'long'
                   })}
                 </span>
               </div>
+
+              {/* Notificaciones */}
+              <button className="btn-glass-secondary w-10 h-10 p-0 rounded-full flex-center relative">
+                <Bell className="w-5 h-5" />
+                {estadoSistema?.reservas_hoy > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Navigation glassmorphism */}
-      <nav className="nav-glass border-b border-white/20">
+      {/* Navigation Glassmorphism */}
+      <nav className="nav-glass">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 overflow-x-auto py-3">
-            
+          <div className="flex gap-2 overflow-x-auto py-4 scrollbar-hide">
             {[
               { id: 'inicio', icon: Home, label: 'Inicio', feature: null },
               { id: 'info', icon: Building, label: 'Información', feature: null },
@@ -516,18 +531,12 @@ function GastroBotDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
-                  activeTab === item.id
-                    ? 'glass-strong border border-white/30'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/10'
-                }`}
-                style={activeTab === item.id ? {
-                  color: currentThemeConfig?.primary,
-                  backgroundColor: currentThemeConfig?.primary + '15'
-                } : {}}
+                className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
               >
                 <item.icon className="w-4 h-4 mr-2 flex-shrink-0" />
-                {item.label}
+                <span className="font-medium text-sm whitespace-nowrap">
+                  {item.label}
+                </span>
               </button>
             ))}
           </div>
@@ -536,148 +545,155 @@ function GastroBotDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Mensajes */}
+        {/* Mensajes Glassmorphism */}
         {mensaje && (
-          <div className={`mb-4 p-4 rounded-lg flex items-center ${
-            mensaje.tipo === 'success' 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {mensaje.tipo === 'success' ? (
-              <CheckCircle className="w-5 h-5 mr-2" />
-            ) : (
-              <AlertCircle className="w-5 h-5 mr-2" />
-            )}
-            {mensaje.texto}
+          <div className={`toast ${mensaje.tipo} mb-6 animate-slide-up`}>
+            <div className="flex items-center">
+              {mensaje.tipo === 'success' ? (
+                <CheckCircle className="w-5 h-5 mr-3" />
+              ) : (
+                <AlertCircle className="w-5 h-5 mr-3" />
+              )}
+              <span className="font-medium">{mensaje.texto}</span>
+            </div>
           </div>
         )}
 
         {/* Contenido por Tab */}
         {/* Contenido por Tab */}
         {activeTab === 'inicio' && (
-          <div className="space-y-8 animate-fadeIn">
-            <div className="flex items-center justify-between">
+          <div className="dashboard-main animate-fade-in">
+            {/* Hero Section */}
+            <div className="flex-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600 mt-1">Bienvenido a tu panel de control</p>
+                <h1 className="text-4xl font-bold font-poppins bg-theme-gradient bg-clip-text text-transparent">
+                  Dashboard GastroBot
+                </h1>
+                <p className="text-slate-600 mt-2 text-lg">Bienvenido a tu panel de control glassmorphism</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                >
-                  <Bell className="w-5 h-5" />
-                  {estadoSistema?.pedidos_pendientes > 0 && (
-                    <Badge
-                      variant="error"
-                      size="sm"
-                      className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 rounded-full text-xs"
-                    >
-                      {estadoSistema.pedidos_pendientes}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                >
-                  <User className="w-5 h-5" />
-                </Button>
+              <div className="flex items-center gap-4">
+                <button className="btn-glass-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Reserva
+                </button>
               </div>
             </div>
 
+            {/* Stats Cards */}
             <EstadoSistema />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Próximas reservas */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Próximas Reservas</CardTitle>
-                    <CardDescription>Reservas confirmadas para hoy</CardDescription>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+              {/* Próximas Reservas Glassmorphism */}
+              <div className="glass-card-lg p-6 animate-scale-in">
+                <div className="flex-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="stats-icon">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">Próximas Reservas</h3>
+                      <p className="text-sm text-slate-600">Reservas confirmadas para hoy</p>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <button
+                    className="btn-glass-secondary w-10 h-10 p-0 rounded-full"
                     onClick={cargarEstadoSistema}
                     disabled={loading}
                   >
-                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                  </Button>
-                </CardHeader>
-                <CardBody>
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+
+                <div className="space-content">
                   {!estadoSistema?.proximas_reservas?.length ? (
-                    <div className="text-center py-8">
-                      <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No hay reservas próximas</p>
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                        <Calendar className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <p className="text-slate-500 font-medium">No hay reservas próximas</p>
+                      <p className="text-xs text-slate-400 mt-1">Las nuevas reservas aparecerán aquí</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {estadoSistema.proximas_reservas.slice(0, 5).map((reserva, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 bg-primary-50 rounded-full flex items-center justify-center">
-                              <User className="w-5 h-5 text-primary-600" />
+                        <div
+                          key={index}
+                          className="glass-card p-4 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02] group"
+                        >
+                          <div className="flex-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-theme-gradient flex-center">
+                                <User className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-900 group-hover:text-slate-700 transition-colors">
+                                  {reserva.nombre}
+                                </p>
+                                <p className="text-sm text-slate-600">{reserva.personas} personas</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{reserva.nombre}</p>
-                              <p className="text-sm text-gray-500">{reserva.personas} personas</p>
+                            <div className="text-right">
+                              <p className="font-bold text-lg text-slate-900">{reserva.hora?.substring(0, 5)}</p>
+                              <p className="text-xs text-slate-500">Mesa {reserva.mesa_id}</p>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-gray-900">{reserva.hora?.substring(0, 5)}</p>
-                            <p className="text-sm text-gray-500">Mesa {reserva.mesa_id}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </CardBody>
-              </Card>
+                </div>
+              </div>
 
-              {/* Estado del menú */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Estado del Menú</CardTitle>
-                    <CardDescription>Platos destacados y disponibilidad</CardDescription>
+              {/* Menu Status Glassmorphism */}
+              <div className="glass-card-lg p-6 animate-scale-in" style={{ animationDelay: '200ms' }}>
+                <div className="flex-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="stats-icon">
+                      <Menu className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">Estado del Menú</h3>
+                      <p className="text-sm text-slate-600">Platos disponibles y destacados</p>
+                    </div>
                   </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
+                  <button
+                    className="btn-glass-primary text-xs px-3 py-1 h-8"
                     onClick={() => setModalPlato(true)}
-                    icon={Plus}
                   >
+                    <Plus className="w-3 h-3 mr-1" />
                     Nuevo Plato
-                  </Button>
-                </CardHeader>
-                <CardBody>
+                  </button>
+                </div>
+
+                <div className="space-content">
                   {!menu.categorias?.length ? (
-                    <div className="text-center py-8">
-                      <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No hay categorías en el menú</p>
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                        <Coffee className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <p className="text-slate-500 font-medium">No hay platos en el menú</p>
+                      <p className="text-xs text-slate-400 mt-1">Comienza agregando categorías y platos</p>
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {menu.categorias.slice(0, 2).map((categoria, index) => (
-                        <div key={index}>
-                          <h4 className="font-semibold text-gray-900 mb-3">{categoria.nombre}</h4>
+                        <div key={index} className="glass-card p-4">
+                          <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-theme-gradient"></div>
+                            {categoria.nombre}
+                          </h4>
                           <div className="space-y-2">
                             {categoria.platos?.slice(0, 3).map((plato, platoIndex) => (
-                              <div key={platoIndex} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-25 transition-colors">
+                              <div key={platoIndex} className="flex-between p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-all duration-300">
                                 <div>
-                                  <p className="font-medium text-gray-900">{plato.nombre}</p>
-                                  <p className="text-sm text-gray-500">€{plato.precio}</p>
+                                  <p className="font-medium text-slate-900">{plato.nombre}</p>
+                                  <p className="text-sm font-bold text-theme-primary">€{plato.precio}</p>
                                 </div>
-                                <Badge
-                                  variant={plato.disponible ? "success" : "error"}
-                                  size="sm"
-                                >
-                                  {plato.disponible ? "Disponible" : "Agotado"}
-                                </Badge>
+                                <div className={`badge-glass ${plato.disponible ? 'text-emerald-600' : 'text-red-600'}`}>
+                                  {plato.disponible ? 'Disponible' : 'Agotado'}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -685,8 +701,8 @@ function GastroBotDashboard() {
                       ))}
                     </div>
                   )}
-                </CardBody>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
         )}
