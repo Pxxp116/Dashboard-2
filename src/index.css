@@ -116,6 +116,50 @@
     transition: var(--transition-bounce);
   }
 
+  /* === NUEVAS VARIANTES GLASSMORPHISM === */
+  .card-glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl;
+    @apply shadow-[0_8px_32px_rgba(31,38,135,0.37)];
+    transition: var(--transition-smooth);
+  }
+
+  .glass-hover-lift {
+    @apply hover:bg-white/20 hover:border-white/40;
+    @apply hover:shadow-[0_20px_60px_rgba(31,38,135,0.6)];
+    @apply hover:-translate-y-2 hover:scale-[1.03];
+    transition: var(--transition-bounce);
+  }
+
+  .glass-hover-glow {
+    @apply hover:shadow-[0_0_30px_rgba(59,130,246,0.5)];
+    transition: var(--transition-smooth);
+  }
+
+  .glass-hover-glow:hover {
+    box-shadow: 0 0 30px var(--theme-primary);
+  }
+
+  .animate-glass-float {
+    animation: glass-float 6s ease-in-out infinite;
+  }
+
+  .glass-metric {
+    @apply bg-white/15 backdrop-blur-lg border border-white/25 rounded-xl;
+    @apply shadow-[0_4px_24px_rgba(31,38,135,0.3)];
+    @apply hover:bg-white/25 hover:border-white/35;
+    @apply hover:shadow-[0_8px_40px_rgba(31,38,135,0.4)];
+    @apply hover:scale-[1.02] transition-all duration-300;
+  }
+
+  .glass-stats {
+    @apply bg-white/12 backdrop-blur-xl border border-white/25 rounded-2xl;
+    @apply shadow-[0_10px_40px_rgba(31,38,135,0.4)];
+    @apply hover:bg-white/20 hover:border-white/40;
+    @apply hover:shadow-[0_15px_50px_rgba(31,38,135,0.5)];
+    @apply hover:-translate-y-1 hover:scale-105;
+    transition: var(--transition-bounce);
+  }
+
   /* === GLASS BUTTONS === */
   .btn-glass {
     @apply bg-white/20 backdrop-blur-md border border-white/30;
@@ -368,6 +412,44 @@
     animation: bounce-subtle 2s infinite;
   }
 
+  /* === NUEVAS ANIMACIONES GLASSMORPHISM === */
+  .animate-glass-float {
+    animation: glass-float 6s ease-in-out infinite;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-fade-slide-up {
+    animation: fade-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-glass-glow {
+    animation: glass-glow 3s ease-in-out infinite;
+  }
+
+  .animate-glass-pulse {
+    animation: glass-pulse 2s ease-in-out infinite;
+  }
+
+  /* === STAGGERED ANIMATIONS === */
+  .animate-stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .animate-stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .animate-stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  .animate-stagger-4 {
+    animation-delay: 0.4s;
+  }
+
   /* === RESPONSIVE GRID UTILITIES === */
   .grid-responsive {
     @apply grid gap-6;
@@ -456,6 +538,70 @@
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+/* ================================
+   NUEVAS ANIMACIONES GLASSMORPHISM
+   ================================ */
+
+@keyframes glass-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    filter: brightness(1);
+  }
+  33% {
+    transform: translateY(-10px) rotate(1deg);
+    filter: brightness(1.05);
+  }
+  66% {
+    transform: translateY(-5px) rotate(-1deg);
+    filter: brightness(0.95);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-slide-up {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glass-glow {
+  0% {
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  100% {
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  }
+}
+
+@keyframes glass-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 15px 50px rgba(31, 38, 135, 0.5);
+  }
 }
 
 /* Print Styles */
