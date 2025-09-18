@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Clock, CheckCircle, Package, Filter, RefreshCw, Search, Calendar } from 'lucide-react';
+import { ShoppingBag, Clock, CheckCircle, Package, Filter, RefreshCw, Search, Calendar, BarChart3, TrendingUp } from 'lucide-react';
 import PedidoCard from './PedidoCard';
 import { usePedidos } from '../../hooks/usePedidos';
 import LoadingSpinner from '../common/LoadingSpinner';
+
+// Componentes de UI modernas
+import { Card, CardHeader, CardBody, CardTitle, CardDescription } from '../ui/Card';
+import Button from '../ui/Button';
+import { OrderStatusBadge } from '../ui/Badge';
+import Input from '../ui/Input';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
+import { cn } from '../../utils/cn';
 
 const PedidosTab = () => {
   const { pedidos, loading, error, cargarPedidos, actualizarEstadoPedido } = usePedidos();
@@ -74,251 +82,408 @@ const PedidosTab = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pendientes</p>
-              <p className="text-2xl font-bold text-yellow-600">{estadisticas.pendientes}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Pedidos</h1>
+          <p className="text-gray-600 mt-1">Monitorea y gestiona todos los pedidos en tiempo real</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">En Preparación</p>
-              <p className="text-2xl font-bold text-blue-600">{estadisticas.enPreparacion}</p>
-            </div>
-            <Package className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            icon={BarChart3}
+            size="sm"
+          >
+            Reportes
+          </Button>
 
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Entregados</p>
-              <p className="text-2xl font-bold text-green-600">{estadisticas.entregados}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total del Día</p>
-              <p className="text-2xl font-bold text-purple-600">€{estadisticas.total.toFixed(2)}</p>
-            </div>
-            <ShoppingBag className="w-8 h-8 text-purple-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filtros y Búsqueda */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          {/* Filtro por fecha */}
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-gray-500" />
-            <input
-              type="date"
-              value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Filtro por estado */}
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-gray-500" />
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="en_preparacion">En Preparación</option>
-              <option value="entregado">Entregados</option>
-              <option value="cancelado">Cancelados</option>
-            </select>
-          </div>
-
-          {/* Búsqueda */}
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Buscar por ID, nombre o teléfono..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Botón actualizar */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => cargarPedidos(filtroFecha, filtroEstado === 'todos' ? null : filtroEstado)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={loading}
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Lista de Pedidos */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center">
-          <ShoppingBag className="mr-2" />
-          Pedidos del Día
-        </h2>
+      {/* Estadísticas mejoradas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-all">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pendientes</p>
+                <p className="text-3xl font-bold text-warning-600 mt-1">{estadisticas.pendientes}</p>
+                <p className="text-xs text-gray-500 mt-1">Requieren atención</p>
+              </div>
+              <div className="h-12 w-12 bg-warning-50 rounded-xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-warning-600" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
 
-        {error && (
-          <div className="p-4 mb-4 bg-red-100 text-red-800 rounded-lg">
-            {error}
-          </div>
-        )}
+        <Card className="hover:shadow-lg transition-all">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">En Preparación</p>
+                <p className="text-3xl font-bold text-info-600 mt-1">{estadisticas.enPreparacion}</p>
+                <p className="text-xs text-gray-500 mt-1">En la cocina</p>
+              </div>
+              <div className="h-12 w-12 bg-info-50 rounded-xl flex items-center justify-center">
+                <Package className="w-6 h-6 text-info-600" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
 
-        {pedidosFiltrados.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No hay pedidos {filtroEstado !== 'todos' ? `${filtroEstado.replace('_', ' ')}s` : ''} para mostrar</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pedidosFiltrados.map((pedido) => (
-              <PedidoCard
-                key={pedido.id}
-                pedido={pedido}
-                onCambiarEstado={handleCambiarEstado}
-                onVerDetalles={() => setPedidoSeleccionado(pedido)}
+        <Card className="hover:shadow-lg transition-all">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Entregados</p>
+                <p className="text-3xl font-bold text-success-600 mt-1">{estadisticas.entregados}</p>
+                <p className="text-xs text-gray-500 mt-1">Completados hoy</p>
+              </div>
+              <div className="h-12 w-12 bg-success-50 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-success-600" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Ingresos</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">€{estadisticas.total.toFixed(0)}</p>
+                <div className="flex items-center mt-1">
+                  <TrendingUp className="w-3 h-3 text-success-600 mr-1" />
+                  <p className="text-xs text-success-600">+12% vs ayer</p>
+                </div>
+              </div>
+              <div className="h-12 w-12 bg-primary-50 rounded-xl flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-primary-600" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Filtros y Búsqueda modernos */}
+      <Card className="border-0 shadow-sm">
+        <CardBody className="p-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Filtros principales */}
+            <div className="flex flex-col sm:flex-row gap-4 lg:flex-1">
+              {/* Filtro por fecha */}
+              <Input
+                type="date"
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value)}
+                icon={Calendar}
+                label="Fecha"
+                className="sm:w-auto"
               />
+
+              {/* Filtro por estado */}
+              <div className="form-group sm:w-auto">
+                <label className="form-label">Estado</label>
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                    className="form-input pl-10 appearance-none bg-white cursor-pointer"
+                  >
+                    <option value="todos">Todos los estados</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="en_preparacion">En Preparación</option>
+                    <option value="entregado">Entregados</option>
+                    <option value="cancelado">Cancelados</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Búsqueda y acciones */}
+            <div className="flex flex-col sm:flex-row gap-4 lg:flex-1">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="Buscar por ID, nombre o teléfono..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  icon={Search}
+                  label="Búsqueda"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => cargarPedidos(filtroFecha, filtroEstado === 'todos' ? null : filtroEstado)}
+                  loading={loading}
+                  className="h-10 w-10"
+                  title="Actualizar pedidos"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros rápidos */}
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+            <span className="text-sm font-medium text-gray-700 mr-2">Filtros rápidos:</span>
+            {[
+              { key: 'todos', label: 'Todos', count: pedidos.length },
+              { key: 'pendiente', label: 'Pendientes', count: estadisticas.pendientes },
+              { key: 'en_preparacion', label: 'En Preparación', count: estadisticas.enPreparacion },
+              { key: 'entregado', label: 'Entregados', count: estadisticas.entregados }
+            ].map(filter => (
+              <button
+                key={filter.key}
+                onClick={() => setFiltroEstado(filter.key)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  filtroEstado === filter.key
+                    ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-transparent'
+                )}
+              >
+                {filter.label}
+                <span className={cn(
+                  'px-1.5 py-0.5 rounded text-xs font-semibold',
+                  filtroEstado === filter.key
+                    ? 'bg-primary-200 text-primary-800'
+                    : 'bg-gray-200 text-gray-700'
+                )}>
+                  {filter.count}
+                </span>
+              </button>
             ))}
           </div>
-        )}
-      </div>
+        </CardBody>
+      </Card>
 
-      {/* Modal de detalles del pedido */}
-      {pedidoSeleccionado && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold">Pedido #{pedidoSeleccionado.id_unico_pedido}</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {new Date(pedidoSeleccionado.fecha_pedido).toLocaleString('es-ES')}
-                </p>
+      {/* Lista de Pedidos mejorada */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                <ShoppingBag className="w-5 h-5 text-primary-600" />
               </div>
-              <button
-                onClick={() => setPedidoSeleccionado(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                ×
-              </button>
+              <div>
+                <CardTitle className="text-xl">Pedidos del Día</CardTitle>
+                <CardDescription>
+                  {pedidosFiltrados.length} {pedidosFiltrados.length === 1 ? 'pedido' : 'pedidos'}
+                  {filtroEstado !== 'todos' && ` ${filtroEstado.replace('_', ' ')}`}
+                </CardDescription>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {/* Información del cliente */}
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Cliente</h4>
-                <p className="text-gray-700">{pedidoSeleccionado.cliente_nombre}</p>
-                <p className="text-gray-600">{pedidoSeleccionado.cliente_telefono}</p>
+            {pedidosFiltrados.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Total: €{pedidosFiltrados.reduce((acc, p) => acc + parseFloat(p.total || 0), 0).toFixed(2)}</span>
               </div>
+            )}
+          </div>
+        </CardHeader>
 
-              {/* Detalles del pedido */}
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Detalles del Pedido</h4>
-                <div className="space-y-2">
-                  {pedidoSeleccionado.detalles_pedido?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b">
-                      <div>
-                        <p className="font-medium">{item.plato}</p>
-                        {item.notas && (
-                          <p className="text-sm text-gray-600">{item.notas}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{item.cantidad} x €{item.precio_unitario}</p>
-                        <p className="text-sm text-gray-600">€{(item.cantidad * item.precio_unitario).toFixed(2)}</p>
-                      </div>
-                    </div>
-                  ))}
+        <CardBody className="pt-0">
+          {error && (
+            <div className="alert alert-error mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                 </div>
+                <p className="text-red-800 font-medium">{error}</p>
               </div>
+            </div>
+          )}
 
-              {/* Total */}
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold">Total</span>
-                  <span className="text-xl font-bold text-green-600">€{pedidoSeleccionado.total}</span>
-                </div>
+          {pedidosFiltrados.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingBag className="w-10 h-10 text-gray-400" />
               </div>
-
-              {/* Estado actual y acciones */}
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Estado del Pedido</h4>
-                <div className="flex items-center space-x-2 mb-4">
-                  {getEstadoIcon(pedidoSeleccionado.estado)}
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEstadoColor(pedidoSeleccionado.estado)}`}>
-                    {pedidoSeleccionado.estado.replace('_', ' ').charAt(0).toUpperCase() + pedidoSeleccionado.estado.slice(1).replace('_', ' ')}
-                  </span>
-                </div>
-
-                <div className="flex space-x-2">
-                  {pedidoSeleccionado.estado === 'pendiente' && (
-                    <button
-                      onClick={() => {
-                        handleCambiarEstado(pedidoSeleccionado.id, 'en_preparacion');
-                        setPedidoSeleccionado(null);
-                      }}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Iniciar Preparación
-                    </button>
-                  )}
-                  {pedidoSeleccionado.estado === 'en_preparacion' && (
-                    <button
-                      onClick={() => {
-                        handleCambiarEstado(pedidoSeleccionado.id, 'entregado');
-                        setPedidoSeleccionado(null);
-                      }}
-                      className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Marcar como Entregado
-                    </button>
-                  )}
-                  {(pedidoSeleccionado.estado === 'pendiente' || pedidoSeleccionado.estado === 'en_preparacion') && (
-                    <button
-                      onClick={() => {
-                        if (window.confirm('¿Seguro que deseas cancelar este pedido?')) {
-                          handleCambiarEstado(pedidoSeleccionado.id, 'cancelado');
-                          setPedidoSeleccionado(null);
-                        }
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Notas adicionales */}
-              {pedidoSeleccionado.notas && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Notas</h4>
-                  <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{pedidoSeleccionado.notas}</p>
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No hay pedidos para mostrar
+              </h3>
+              <p className="text-gray-600 max-w-sm mx-auto">
+                {filtroEstado !== 'todos'
+                  ? `No se encontraron pedidos ${filtroEstado.replace('_', ' ')} para la fecha seleccionada.`
+                  : 'No hay pedidos registrados para la fecha seleccionada.'
+                }
+              </p>
+              {busqueda && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setBusqueda('')}
+                  className="mt-4"
+                >
+                  Limpiar búsqueda
+                </Button>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {pedidosFiltrados.map((pedido) => (
+                <PedidoCard
+                  key={pedido.id}
+                  pedido={pedido}
+                  onCambiarEstado={handleCambiarEstado}
+                  onVerDetalles={() => setPedidoSeleccionado(pedido)}
+                />
+              ))}
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Modal moderno de detalles del pedido */}
+      <Modal
+        isOpen={!!pedidoSeleccionado}
+        onClose={() => setPedidoSeleccionado(null)}
+        size="lg"
+        title={`Pedido #${pedidoSeleccionado?.id_unico_pedido}`}
+      >
+        {pedidoSeleccionado && (
+          <>
+            <ModalBody className="max-h-[70vh] overflow-y-auto">
+              <div className="space-y-6">
+                {/* Header con fecha y estado */}
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {new Date(pedidoSeleccionado.fecha_pedido).toLocaleString('es-ES')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getEstadoIcon(pedidoSeleccionado.estado)}
+                    <OrderStatusBadge status={pedidoSeleccionado.estado}>
+                      {pedidoSeleccionado.estado.replace('_', ' ').charAt(0).toUpperCase() + pedidoSeleccionado.estado.slice(1).replace('_', ' ')}
+                    </OrderStatusBadge>
+                  </div>
+                </div>
+
+                {/* Información del cliente */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Información del Cliente</h4>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600">Nombre:</span>
+                      <span className="text-sm font-semibold text-gray-900">{pedidoSeleccionado.cliente_nombre}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600">Teléfono:</span>
+                      <span className="text-sm font-semibold text-gray-900">{pedidoSeleccionado.cliente_telefono}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detalles del pedido */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Detalles del Pedido</h4>
+                  <div className="space-y-3">
+                    {pedidoSeleccionado.detalles_pedido?.map((item, index) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-gray-900">{item.plato}</h5>
+                            {item.notas && (
+                              <p className="text-sm text-gray-600 mt-1 italic">{item.notas}</p>
+                            )}
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-semibold text-gray-900">{item.cantidad} x €{item.precio_unitario}</p>
+                            <p className="text-lg font-bold text-primary-600">€{(item.cantidad * item.precio_unitario).toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Total */}
+                <div className="bg-primary-50 rounded-xl p-4 border border-primary-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold text-gray-900">Total del Pedido</span>
+                    <span className="text-2xl font-bold text-primary-600">€{pedidoSeleccionado.total}</span>
+                  </div>
+                </div>
+
+                {/* Notas adicionales */}
+                {pedidoSeleccionado.notas && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Notas Especiales</h4>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                      <p className="text-gray-700">{pedidoSeleccionado.notas}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ModalBody>
+
+            <ModalFooter>
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                {pedidoSeleccionado.estado === 'pendiente' && (
+                  <Button
+                    onClick={() => {
+                      handleCambiarEstado(pedidoSeleccionado.id, 'en_preparacion');
+                      setPedidoSeleccionado(null);
+                    }}
+                    className="flex-1"
+                    variant="primary"
+                  >
+                    Iniciar Preparación
+                  </Button>
+                )}
+                {pedidoSeleccionado.estado === 'en_preparacion' && (
+                  <Button
+                    onClick={() => {
+                      handleCambiarEstado(pedidoSeleccionado.id, 'entregado');
+                      setPedidoSeleccionado(null);
+                    }}
+                    className="flex-1"
+                    variant="success"
+                  >
+                    Marcar como Entregado
+                  </Button>
+                )}
+                {(pedidoSeleccionado.estado === 'pendiente' || pedidoSeleccionado.estado === 'en_preparacion') && (
+                  <Button
+                    onClick={() => {
+                      if (window.confirm('¿Seguro que deseas cancelar este pedido?')) {
+                        handleCambiarEstado(pedidoSeleccionado.id, 'cancelado');
+                        setPedidoSeleccionado(null);
+                      }
+                    }}
+                    variant="danger"
+                  >
+                    Cancelar Pedido
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => setPedidoSeleccionado(null)}
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </ModalFooter>
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

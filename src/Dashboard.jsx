@@ -1,6 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, Menu, Settings, AlertCircle, CheckCircle, RefreshCw, Home, Coffee, Plus, X, Save, Eye, EyeOff, Building, Edit2, ShoppingBag } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Users,
+  Menu,
+  Settings,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Home,
+  Coffee,
+  Plus,
+  X,
+  Save,
+  Eye,
+  EyeOff,
+  Building,
+  Edit2,
+  ShoppingBag,
+  BarChart3,
+  Bell,
+  User
+} from 'lucide-react';
 
+// Componentes de la UI moderna
+import { Card, CardHeader, CardBody, CardTitle, CardDescription } from './components/ui/Card';
+import Button from './components/ui/Button';
+import Badge from './components/ui/Badge';
+
+// Componentes de las páginas
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
 import PoliciesTab from './components/policies/PoliciesTab';
@@ -401,55 +429,68 @@ function GastroBotDashboard() {
   // Removido TabPoliticas - usando PoliciesTab importado
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-25">
+      {/* Header mejorado */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Coffee className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">GastroBot Dashboard</h1>
+              <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center">
+                <Coffee className="w-6 h-6 text-white" />
+              </div>
+              <div className="ml-3">
+                <h1 className="text-xl font-bold text-gray-900">GastroBot</h1>
+                <p className="text-xs text-gray-500">Dashboard Admin</p>
+              </div>
             </div>
+
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">
-                {new Date().toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </span>
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-success-50 rounded-full">
+                <CheckCircle className="w-4 h-4 text-success-600" />
+                <span className="text-xs font-medium text-success-700">Sistema Activo</span>
+              </div>
+
+              <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
+
+              <div className="flex items-center space-x-1 text-sm text-gray-600">
+                <span className="hidden sm:inline">
+                  {new Date().toLocaleDateString('es-ES', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short'
+                  })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
+      {/* Navigation mejorada */}
+      <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+          <div className="flex space-x-1 overflow-x-auto py-3">
             
-              {[
-      { id: 'inicio', icon: Home, label: 'Inicio', feature: null },
-      { id: 'info', icon: Building, label: 'Información', feature: null },
-      { id: 'horarios', icon: Clock, label: 'Horarios', feature: null },
-      { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
-      { id: 'pedidos', icon: ShoppingBag, label: 'Pedidos', feature: null },
-      { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
-      { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
-      { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
-
+            {[
+              { id: 'inicio', icon: Home, label: 'Inicio', feature: null },
+              { id: 'info', icon: Building, label: 'Información', feature: null },
+              { id: 'horarios', icon: Clock, label: 'Horarios', feature: null },
+              { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
+              { id: 'pedidos', icon: ShoppingBag, label: 'Pedidos', feature: null },
+              { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
+              { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
+              { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
             ].filter(item => !item.feature || features[item.feature]).map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                   activeTab === item.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                <item.icon className="w-4 h-4 mr-2" />
+                <item.icon className="w-4 h-4 mr-2 flex-shrink-0" />
                 {item.label}
               </button>
             ))}
@@ -478,34 +519,138 @@ function GastroBotDashboard() {
         {/* Contenido por Tab */}
         {/* Contenido por Tab */}
         {activeTab === 'inicio' && (
-          <div className="space-y-6">
+          <div className="space-y-8 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-gray-600 mt-1">Bienvenido a tu panel de control</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                >
+                  <Bell className="w-5 h-5" />
+                  {estadoSistema?.pedidos_pendientes > 0 && (
+                    <Badge
+                      variant="error"
+                      size="sm"
+                      className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 rounded-full text-xs"
+                    >
+                      {estadoSistema.pedidos_pendientes}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                >
+                  <User className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
             <EstadoSistema />
-            
-            {/* Próximas Reservas */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Próximas Reservas</h2>
-              {estadoSistema?.proximas_reservas?.length > 0 ? (
-                <div className="space-y-3">
-                  {estadoSistema.proximas_reservas.map((reserva, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-3 text-gray-500" />
-                        <div>
-                          <p className="font-medium">{reserva.nombre}</p>
-                          <p className="text-sm text-gray-500">
-                            {reserva.fecha} - {reserva.hora?.substring(0, 5)} - {reserva.personas} personas
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-blue-600">
-                        Mesa {reserva.mesa_id}
-                      </span>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Próximas reservas */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Próximas Reservas</CardTitle>
+                    <CardDescription>Reservas confirmadas para hoy</CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={cargarEstadoSistema}
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </CardHeader>
+                <CardBody>
+                  {!estadoSistema?.proximas_reservas?.length ? (
+                    <div className="text-center py-8">
+                      <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No hay reservas próximas</p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No hay reservas próximas</p>
-              )}
+                  ) : (
+                    <div className="space-y-4">
+                      {estadoSistema.proximas_reservas.slice(0, 5).map((reserva, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 bg-primary-50 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5 text-primary-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{reserva.nombre}</p>
+                              <p className="text-sm text-gray-500">{reserva.personas} personas</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900">{reserva.hora?.substring(0, 5)}</p>
+                            <p className="text-sm text-gray-500">Mesa {reserva.mesa_id}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+
+              {/* Estado del menú */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Estado del Menú</CardTitle>
+                    <CardDescription>Platos destacados y disponibilidad</CardDescription>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setModalPlato(true)}
+                    icon={Plus}
+                  >
+                    Nuevo Plato
+                  </Button>
+                </CardHeader>
+                <CardBody>
+                  {!menu.categorias?.length ? (
+                    <div className="text-center py-8">
+                      <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No hay categorías en el menú</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {menu.categorias.slice(0, 2).map((categoria, index) => (
+                        <div key={index}>
+                          <h4 className="font-semibold text-gray-900 mb-3">{categoria.nombre}</h4>
+                          <div className="space-y-2">
+                            {categoria.platos?.slice(0, 3).map((plato, platoIndex) => (
+                              <div key={platoIndex} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-25 transition-colors">
+                                <div>
+                                  <p className="font-medium text-gray-900">{plato.nombre}</p>
+                                  <p className="text-sm text-gray-500">€{plato.precio}</p>
+                                </div>
+                                <Badge
+                                  variant={plato.disponible ? "success" : "error"}
+                                  size="sm"
+                                >
+                                  {plato.disponible ? "Disponible" : "Agotado"}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
             </div>
           </div>
         )}

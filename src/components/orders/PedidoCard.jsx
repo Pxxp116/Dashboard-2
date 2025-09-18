@@ -1,5 +1,9 @@
 import React from 'react';
-import { Clock, CheckCircle, Package, XCircle, Phone, User, Hash, ChevronRight } from 'lucide-react';
+import { Clock, CheckCircle, Package, XCircle, Phone, User, Hash, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Card, CardBody } from '../ui/Card';
+import Button from '../ui/Button';
+import { OrderStatusBadge } from '../ui/Badge';
+import { cn } from '../../utils/cn';
 
 const PedidoCard = ({ pedido, onCambiarEstado, onVerDetalles }) => {
   const getEstadoColor = (estado) => {
@@ -69,120 +73,143 @@ const PedidoCard = ({ pedido, onCambiarEstado, onVerDetalles }) => {
   const numeroItems = pedido.detalles_pedido?.reduce((acc, item) => acc + item.cantidad, 0) || 0;
 
   return (
-    <div className={`bg-white border-2 rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer ${getEstadoColor(pedido.estado)}`}>
-      <div onClick={onVerDetalles}>
-        {/* Header */}
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center space-x-2">
-            <Hash className="w-4 h-4 text-gray-500" />
-            <span className="font-bold text-lg">{pedido.id_unico_pedido}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            {getEstadoIcon(pedido.estado)}
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getEstadoColor(pedido.estado)}`}>
-              {estadoTexto(pedido.estado)}
-            </span>
-          </div>
-        </div>
-
-        {/* Información del cliente */}
-        <div className="space-y-2 mb-3">
-          <div className="flex items-center space-x-2 text-gray-700">
-            <User className="w-4 h-4 text-gray-400" />
-            <span className="font-medium truncate">{pedido.cliente_nombre}</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Phone className="w-4 h-4 text-gray-400" />
-            <span className="text-sm">{pedido.cliente_telefono}</span>
-          </div>
-        </div>
-
-        {/* Resumen del pedido */}
-        <div className="border-t pt-3 mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">{numeroItems} {numeroItems === 1 ? 'producto' : 'productos'}</span>
-            <span className="font-bold text-lg">€{parseFloat(pedido.total).toFixed(2)}</span>
-          </div>
-
-          {/* Preview de los primeros 2 items */}
-          {pedido.detalles_pedido?.slice(0, 2).map((item, index) => (
-            <div key={index} className="text-sm text-gray-600 truncate">
-              • {item.cantidad}x {item.plato}
+    <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer border-0 shadow-sm">
+      <CardBody className="p-0">
+        <div onClick={onVerDetalles} className="p-6">
+          {/* Header moderno */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                <Hash className="w-5 h-5 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">#{pedido.id_unico_pedido}</h3>
+                <p className="text-sm text-gray-500">{formatearFecha(pedido.fecha_pedido)}</p>
+              </div>
             </div>
-          ))}
-          {pedido.detalles_pedido?.length > 2 && (
-            <div className="text-sm text-gray-500 italic">
-              +{pedido.detalles_pedido.length - 2} más...
+            <div className="flex items-center gap-2">
+              <OrderStatusBadge status={pedido.estado}>
+                {estadoTexto(pedido.estado)}
+              </OrderStatusBadge>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
             </div>
-          )}
+          </div>
+
+          {/* Información del cliente */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-900 truncate">{pedido.cliente_nombre}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">{pedido.cliente_telefono}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Resumen del pedido */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">{numeroItems} {numeroItems === 1 ? 'producto' : 'productos'}</span>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-gray-900">€{parseFloat(pedido.total).toFixed(2)}</div>
+              </div>
+            </div>
+
+            {/* Preview de items */}
+            <div className="space-y-1">
+              {pedido.detalles_pedido?.slice(0, 2).map((item, index) => (
+                <div key={index} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 truncate flex-1">{item.cantidad}x {item.plato}</span>
+                  <span className="font-medium text-gray-900 ml-2">€{(item.cantidad * item.precio_unitario).toFixed(2)}</span>
+                </div>
+              ))}
+              {pedido.detalles_pedido?.length > 2 && (
+                <div className="text-sm text-gray-500 italic">
+                  +{pedido.detalles_pedido.length - 2} artículo{pedido.detalles_pedido.length - 2 > 1 ? 's' : ''} más...
+                </div>
+              )}
+            </div>
+
+            {/* Mesa (si aplica) */}
+            {pedido.numero_mesa && (
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <span className="text-sm text-gray-600">Mesa:</span>
+                <span className="font-semibold text-primary-600">#{pedido.numero_mesa}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Mesa (si aplica) */}
-        {pedido.numero_mesa && (
-          <div className="text-sm text-gray-600 mb-3">
-            Mesa: <span className="font-medium">{pedido.numero_mesa}</span>
-          </div>
-        )}
+        {/* Botones de acción modernos */}
+        <div className="px-6 pb-6">
+          <div className="flex gap-2">
+            {pedido.estado === 'pendiente' && (
+              <>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCambiarEstado(pedido.id, 'en_preparacion');
+                  }}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Preparar
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm('¿Cancelar este pedido?')) {
+                      onCambiarEstado(pedido.id, 'cancelado');
+                    }
+                  }}
+                  variant="danger"
+                  size="sm"
+                >
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </>
+            )}
 
-        {/* Tiempo */}
-        <div className="text-xs text-gray-500 flex items-center justify-between">
-          <span>{formatearFecha(pedido.fecha_pedido)}</span>
-          <ChevronRight className="w-4 h-4" />
+            {pedido.estado === 'en_preparacion' && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCambiarEstado(pedido.id, 'entregado');
+                }}
+                variant="success"
+                size="sm"
+                className="flex-1"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Marcar Entregado
+              </Button>
+            )}
+
+            {pedido.estado === 'entregado' && (
+              <div className="flex-1 flex items-center justify-center gap-2 py-2 text-success-600 font-medium">
+                <CheckCircle className="w-4 h-4" />
+                <span>Completado</span>
+              </div>
+            )}
+
+            {pedido.estado === 'cancelado' && (
+              <div className="flex-1 flex items-center justify-center gap-2 py-2 text-red-600 font-medium">
+                <XCircle className="w-4 h-4" />
+                <span>Cancelado</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Botones de acción rápida */}
-      <div className="border-t mt-3 pt-3 flex gap-2">
-        {pedido.estado === 'pendiente' && (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCambiarEstado(pedido.id, 'en_preparacion');
-              }}
-              className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 transition-colors"
-            >
-              Preparar
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (window.confirm('¿Cancelar este pedido?')) {
-                  onCambiarEstado(pedido.id, 'cancelado');
-                }
-              }}
-              className="px-3 py-1.5 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
-            >
-              Cancelar
-            </button>
-          </>
-        )}
-
-        {pedido.estado === 'en_preparacion' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onCambiarEstado(pedido.id, 'entregado');
-            }}
-            className="flex-1 bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700 transition-colors"
-          >
-            Marcar Entregado
-          </button>
-        )}
-
-        {pedido.estado === 'entregado' && (
-          <div className="flex-1 text-center text-green-600 font-medium text-sm">
-            ✓ Completado
-          </div>
-        )}
-
-        {pedido.estado === 'cancelado' && (
-          <div className="flex-1 text-center text-red-600 font-medium text-sm">
-            ✗ Cancelado
-          </div>
-        )}
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 };
 
