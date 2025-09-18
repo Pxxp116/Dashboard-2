@@ -7,6 +7,7 @@ const Button = React.forwardRef(({
   size = 'default',
   disabled = false,
   loading = false,
+  glass = false,
   icon: Icon,
   iconPosition = 'left',
   className,
@@ -17,11 +18,12 @@ const Button = React.forwardRef(({
   const baseClasses = 'btn';
 
   const variantClasses = {
-    primary: 'btn-primary',
+    primary: glass ? 'btn-glass text-white' : 'btn-primary',
     secondary: 'btn-secondary',
     ghost: 'btn-ghost',
     success: 'btn-success',
     danger: 'btn-danger',
+    glass: 'btn-glass',
   };
 
   const sizeClasses = {

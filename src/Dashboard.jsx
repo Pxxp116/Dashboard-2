@@ -27,6 +27,8 @@ import {
 import { Card, CardHeader, CardBody, CardTitle, CardDescription } from './components/ui/Card';
 import Button from './components/ui/Button';
 import Badge from './components/ui/Badge';
+import ThemeSwitcher from './components/theme/ThemeSwitcher';
+import { useTheme } from './context/ThemeContext';
 
 // Componentes de las páginas
 import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
@@ -54,6 +56,7 @@ if (process.env.NODE_ENV === 'development') {
 function GastroBotDashboard() {
   const { datosEspejo, actualizarDatosEspejo } = useAppContext();
   const { features } = useFeatures();
+  const { currentThemeConfig } = useTheme();
   const [activeTab, setActiveTab] = useState('inicio');
   const [estadoSistema, setEstadoSistema] = useState(null);
   // Obtener datos del contexto
@@ -320,51 +323,74 @@ function GastroBotDashboard() {
     }
   };
 
-  // Componente de Estado del Sistema
+  // Componente de Estado del Sistema con glassmorphism
   const EstadoSistema = () => {
     if (!estadoSistema) return null;
-    
+
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center">
-            <AlertCircle className="mr-2" />
-            Estado del Sistema
-          </h2>
-          <button
+      <Card glass={true} className="animate-glass-float">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center glass-strong"
+              style={{ backgroundColor: currentThemeConfig?.primary + '20' }}
+            >
+              <AlertCircle className="w-5 h-5" style={{ color: currentThemeConfig?.primary }} />
+            </div>
+            <div>
+              <CardTitle>Estado del Sistema</CardTitle>
+              <CardDescription>Métricas en tiempo real</CardDescription>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => {
               cargarEstadoSistema();
               actualizarDatosEspejo();
             }}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="glass-hover-glow"
           >
             <RefreshCw className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-blue-50">
-            <span className="text-sm text-gray-600">Reservas Hoy</span>
-            <p className="text-2xl font-bold mt-2">{estadoSistema.reservas_hoy}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              {estadoSistema.mesas_ocupadas}/{estadoSistema.mesas_totales} mesas ocupadas
-            </p>
-          </div>
-          
-          <div className="p-4 rounded-lg bg-purple-50">
-            <span className="text-sm text-gray-600">Ocupación</span>
-            <p className="text-2xl font-bold mt-2">
-              {Math.round((estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100)}%
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
-                className="bg-purple-600 h-2 rounded-full transition-all"
-                style={{ width: `${(estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100}%` }}
-              />
+          </Button>
+        </CardHeader>
+
+        <CardBody>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 rounded-2xl glass-gradient">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-600">Reservas Hoy</span>
+                <Calendar className="w-5 h-5 text-gray-400" />
+              </div>
+              <p className="text-3xl font-bold mb-2" style={{ color: currentThemeConfig?.primary }}>
+                {estadoSistema.reservas_hoy}
+              </p>
+              <p className="text-xs text-gray-500">
+                {estadoSistema.mesas_ocupadas}/{estadoSistema.mesas_totales} mesas ocupadas
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl glass-gradient">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-600">Ocupación</span>
+                <BarChart3 className="w-5 h-5 text-gray-400" />
+              </div>
+              <p className="text-3xl font-bold mb-3" style={{ color: currentThemeConfig?.primary }}>
+                {Math.round((estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100)}%
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${(estadoSistema.mesas_ocupadas / estadoSistema.mesas_totales) * 100}%`,
+                    backgroundColor: currentThemeConfig?.primary
+                  }}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
     );
   };
 
@@ -430,13 +456,16 @@ function GastroBotDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-25">
-      {/* Header mejorado */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      {/* Header glassmorphism */}
+      <header className="nav-glass border-b border-white/20 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center">
-                <Coffee className="w-6 h-6 text-white" />
+              <div
+                className="h-10 w-10 rounded-xl flex items-center justify-center glass-strong"
+                style={{ backgroundColor: currentThemeConfig?.primary + '20' }}
+              >
+                <Coffee className="w-6 h-6" style={{ color: currentThemeConfig?.primary }} />
               </div>
               <div className="ml-3">
                 <h1 className="text-xl font-bold text-gray-900">GastroBot</h1>
@@ -445,12 +474,15 @@ function GastroBotDashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-success-50 rounded-full">
+              <div className="flex items-center space-x-2 px-3 py-1.5 glass rounded-full">
                 <CheckCircle className="w-4 h-4 text-success-600" />
                 <span className="text-xs font-medium text-success-700">Sistema Activo</span>
               </div>
 
-              <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
+              <div className="h-8 w-px bg-white/20 hidden md:block"></div>
+
+              {/* Theme Switcher */}
+              <ThemeSwitcher trigger="button" />
 
               <div className="flex items-center space-x-1 text-sm text-gray-600">
                 <span className="hidden sm:inline">
@@ -466,8 +498,8 @@ function GastroBotDashboard() {
         </div>
       </header>
 
-      {/* Navigation mejorada */}
-      <nav className="bg-white border-b border-gray-200">
+      {/* Navigation glassmorphism */}
+      <nav className="nav-glass border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 overflow-x-auto py-3">
             
@@ -486,9 +518,13 @@ function GastroBotDashboard() {
                 onClick={() => setActiveTab(item.id)}
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                   activeTab === item.id
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'glass-strong border border-white/30'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/10'
                 }`}
+                style={activeTab === item.id ? {
+                  color: currentThemeConfig?.primary,
+                  backgroundColor: currentThemeConfig?.primary + '15'
+                } : {}}
               >
                 <item.icon className="w-4 h-4 mr-2 flex-shrink-0" />
                 {item.label}

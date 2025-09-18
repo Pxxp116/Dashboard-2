@@ -1,0 +1,414 @@
+/* ================================
+   SISTEMA DE TEMAS GLASSMORPHISM
+   ================================ */
+
+/* Variables base para temas dinámicos */
+:root {
+  /* Variables que serán actualizadas dinámicamente por JavaScript */
+  --color-theme-primary: #2563eb;
+  --color-theme-primary-light: #3b82f6;
+  --color-theme-primary-dark: #1d4ed8;
+
+  /* Glassmorphism base variables */
+  --glass-background: rgba(255, 255, 255, 0.15);
+  --glass-background-hover: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --glass-backdrop-filter: blur(4px);
+  --glass-backdrop-filter-strong: blur(10px);
+
+  /* Opacity layers para glassmorphism */
+  --glass-opacity-subtle: 0.1;
+  --glass-opacity-medium: 0.15;
+  --glass-opacity-strong: 0.25;
+}
+
+/* ================================
+   TEMA AZUL PROFESIONAL
+   ================================ */
+[data-theme="blue"] {
+  --color-primary-25: #f5f8ff;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  /* Glassmorphism específico para azul */
+  --glass-tint: rgba(37, 99, 235, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(37, 99, 235, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+  --glass-border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* ================================
+   TEMA VERDE NATURA
+   ================================ */
+[data-theme="emerald"] {
+  --color-primary-25: #ecfdf5;
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  --color-primary-950: #052e16;
+
+  /* Glassmorphism específico para verde */
+  --glass-tint: rgba(22, 163, 74, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(22, 163, 74, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+  --glass-border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* ================================
+   TEMA VIOLETA ELEGANTE
+   ================================ */
+[data-theme="violet"] {
+  --color-primary-25: #faf5ff;
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+  --color-primary-950: #2e1065;
+
+  /* Glassmorphism específico para violeta */
+  --glass-tint: rgba(124, 58, 237, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(124, 58, 237, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.1) 100%);
+  --glass-border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* ================================
+   TEMA ROSA MODERNO
+   ================================ */
+[data-theme="rose"] {
+  --color-primary-25: #fff1f2;
+  --color-primary-50: #fef2f2;
+  --color-primary-100: #fecaca;
+  --color-primary-200: #fca5a5;
+  --color-primary-300: #f87171;
+  --color-primary-400: #ef4444;
+  --color-primary-500: #dc2626;
+  --color-primary-600: #b91c1c;
+  --color-primary-700: #991b1b;
+  --color-primary-800: #7f1d1d;
+  --color-primary-900: #7c2d12;
+  --color-primary-950: #431407;
+
+  /* Glassmorphism específico para rosa */
+  --glass-tint: rgba(225, 29, 72, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(225, 29, 72, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(225, 29, 72, 0.1) 100%);
+  --glass-border-color: rgba(244, 63, 94, 0.3);
+}
+
+/* ================================
+   TEMA NARANJA ENERGÉTICO
+   ================================ */
+[data-theme="orange"] {
+  --color-primary-25: #fff7ed;
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-primary-700: #c2410c;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
+  --color-primary-950: #431407;
+
+  /* Glassmorphism específico para naranja */
+  --glass-tint: rgba(234, 88, 12, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(234, 88, 12, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%);
+  --glass-border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* ================================
+   TEMA CYAN CRISTALINO
+   ================================ */
+[data-theme="cyan"] {
+  --color-primary-25: #ecfeff;
+  --color-primary-50: #ecfeff;
+  --color-primary-100: #cffafe;
+  --color-primary-200: #a5f3fc;
+  --color-primary-300: #67e8f9;
+  --color-primary-400: #22d3ee;
+  --color-primary-500: #06b6d4;
+  --color-primary-600: #0891b2;
+  --color-primary-700: #0e7490;
+  --color-primary-800: #155e75;
+  --color-primary-900: #164e63;
+  --color-primary-950: #083344;
+
+  /* Glassmorphism específico para cyan */
+  --glass-tint: rgba(8, 145, 178, var(--glass-opacity-medium));
+  --glass-tint-hover: rgba(8, 145, 178, var(--glass-opacity-strong));
+  --glass-gradient: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.1) 100%);
+  --glass-border-color: rgba(6, 182, 212, 0.3);
+}
+
+/* ================================
+   MODO OSCURO - AJUSTES GLASSMORPHISM
+   ================================ */
+[data-mode="dark"] {
+  /* Fondo base más oscuro */
+  --color-gray-25: #111827;
+  --color-gray-50: #1f2937;
+  --color-gray-100: #374151;
+  --color-gray-200: #4b5563;
+
+  /* Glassmorphism para modo oscuro */
+  --glass-background: rgba(0, 0, 0, 0.25);
+  --glass-background-hover: rgba(0, 0, 0, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+
+  /* Opacidades ajustadas para modo oscuro */
+  --glass-opacity-subtle: 0.15;
+  --glass-opacity-medium: 0.2;
+  --glass-opacity-strong: 0.3;
+}
+
+/* ================================
+   COMPONENTES GLASSMORPHISM BASE
+   ================================ */
+
+/* Clase base para efectos glassmorphism */
+.glass {
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass:hover {
+  background: var(--glass-background-hover);
+  border-color: var(--glass-border-color);
+  transform: translateY(-1px);
+}
+
+/* Variante fuerte de glassmorphism */
+.glass-strong {
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-backdrop-filter-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter-strong);
+  border: 1px solid var(--glass-border-color);
+}
+
+.glass-strong:hover {
+  background: var(--glass-tint-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Glassmorphism con gradiente */
+.glass-gradient {
+  background: var(--glass-gradient);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+}
+
+/* ================================
+   COMPONENTES ESPECÍFICOS
+   ================================ */
+
+/* Cards glassmorphism */
+.card-glass {
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.1),
+    0 2px 16px 0 rgba(31, 38, 135, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-glass:hover {
+  background: var(--glass-background-hover);
+  border-color: var(--glass-border-color);
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 40px 0 rgba(31, 38, 135, 0.15),
+    0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+/* Botones glassmorphism */
+.btn-glass {
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border-color);
+  color: var(--color-theme-primary-dark);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-glass:hover {
+  background: var(--glass-tint-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Inputs glassmorphism */
+.input-glass {
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-glass:focus {
+  background: var(--glass-background-hover);
+  border-color: var(--glass-border-color);
+  box-shadow: 0 0 0 3px rgba(var(--color-theme-primary), 0.1);
+}
+
+/* Navigation glassmorphism */
+.nav-glass {
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-backdrop-filter-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter-strong);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* Modal overlay glassmorphism */
+.modal-overlay-glass {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ================================
+   ANIMACIONES ESPECÍFICAS PARA GLASS
+   ================================ */
+
+@keyframes glassFloat {
+  0%, 100% {
+    transform: translateY(0px);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  }
+  50% {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px 0 rgba(31, 38, 135, 0.15);
+  }
+}
+
+@keyframes glassShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glassPulse {
+  0%, 100% {
+    background: var(--glass-background);
+    border-color: var(--glass-border);
+  }
+  50% {
+    background: var(--glass-background-hover);
+    border-color: var(--glass-border-color);
+  }
+}
+
+/* Clases de animación */
+.animate-glass-float {
+  animation: glassFloat 3s ease-in-out infinite;
+}
+
+.animate-glass-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--glass-background) 25%,
+    var(--glass-background-hover) 50%,
+    var(--glass-background) 75%
+  );
+  background-size: 200% 100%;
+  animation: glassShimmer 2s infinite;
+}
+
+.animate-glass-pulse {
+  animation: glassPulse 2s ease-in-out infinite;
+}
+
+/* ================================
+   UTILIDADES GLASSMORPHISM
+   ================================ */
+
+/* Bordes redondeados para glass */
+.glass-rounded { border-radius: 1rem; }
+.glass-rounded-lg { border-radius: 1.25rem; }
+.glass-rounded-xl { border-radius: 1.5rem; }
+.glass-rounded-2xl { border-radius: 2rem; }
+.glass-rounded-3xl { border-radius: 3rem; }
+
+/* Estados de hover especiales */
+.glass-hover-lift:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.glass-hover-glow:hover {
+  box-shadow:
+    0 0 30px rgba(var(--color-theme-primary), 0.3),
+    0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+/* Grupos glass con efectos escalonados */
+.glass-group:hover .glass-group-item {
+  transform: translateY(-2px);
+}
+
+.glass-group .glass-group-item:nth-child(1) { transition-delay: 0.05s; }
+.glass-group .glass-group-item:nth-child(2) { transition-delay: 0.1s; }
+.glass-group .glass-group-item:nth-child(3) { transition-delay: 0.15s; }
+.glass-group .glass-group-item:nth-child(4) { transition-delay: 0.2s; }
+
+/* Desactivar glassmorphism si no está soportado */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass,
+  .glass-strong,
+  .card-glass,
+  .btn-glass,
+  .input-glass,
+  .nav-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  [data-mode="dark"] .glass,
+  [data-mode="dark"] .glass-strong,
+  [data-mode="dark"] .card-glass,
+  [data-mode="dark"] .btn-glass,
+  [data-mode="dark"] .input-glass,
+  [data-mode="dark"] .nav-glass {
+    background: rgba(31, 41, 55, 0.9);
+  }
+}

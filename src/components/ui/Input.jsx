@@ -5,13 +5,14 @@ const Input = React.forwardRef(({
   label,
   error,
   helperText,
+  glass = false,
   icon: Icon,
   iconPosition = 'left',
   className,
   ...props
 }, ref) => {
   const inputClasses = cn(
-    'form-input',
+    glass ? 'input-glass' : 'form-input',
     error && 'error',
     Icon && iconPosition === 'left' && 'pl-10',
     Icon && iconPosition === 'right' && 'pr-10',

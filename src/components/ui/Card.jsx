@@ -7,20 +7,23 @@ const Card = React.forwardRef(({
   variant = 'default',
   padding = 'default',
   hover = true,
+  glass = true,
   ...props
 }, ref) => {
-  const baseClasses = 'card';
+  const baseClasses = glass ? 'card-glass' : 'card';
 
   const variantClasses = {
     default: '',
     compact: 'card-compact',
-    elevated: 'shadow-lg',
+    elevated: glass ? 'glass-hover-lift' : 'shadow-lg',
+    floating: glass ? 'animate-glass-float' : '',
+    glow: glass ? 'glass-hover-glow' : '',
   };
 
   const classes = cn(
     baseClasses,
     variantClasses[variant],
-    hover && 'transition-all hover:shadow-md hover:border-gray-300',
+    hover && (glass ? 'glass-hover-lift' : 'transition-all hover:shadow-md hover:border-gray-300'),
     className
   );
 

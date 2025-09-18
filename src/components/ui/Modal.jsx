@@ -9,6 +9,7 @@ const Modal = ({
   children,
   title,
   size = 'default',
+  glass = true,
   closeOnBackdrop = true,
   className,
 }) => {
@@ -49,12 +50,18 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fadeIn"
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center animate-fadeIn',
+        glass
+          ? 'modal-overlay-glass'
+          : 'bg-black bg-opacity-50'
+      )}
       onClick={handleBackdropClick}
     >
       <div
         className={cn(
-          'bg-white rounded-2xl shadow-xl w-full animate-scaleIn',
+          glass ? 'card-glass' : 'bg-white',
+          'rounded-2xl shadow-xl w-full animate-scaleIn',
           sizeClasses[size],
           className
         )}
