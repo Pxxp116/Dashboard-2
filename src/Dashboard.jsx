@@ -26,6 +26,8 @@ import {
 // Componentes de la UI moderna
 import ThemeSwitcher from './components/theme/ThemeSwitcher';
 import { useTheme } from './context/ThemeContext';
+import DashboardLayout from './components/layout/DashboardLayout.jsx';
+import Inicio from './pages/Inicio.jsx';
 
 // Componentes de las páginas
 import MesasTab from './components/tables/MesasTab';
@@ -400,93 +402,11 @@ function GastroBotDashboard() {
 
 
   return (
-    <div className="dashboard-container">
-      {/* Header Glassmorphism Moderno */}
-      <header className="dashboard-header">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex-between h-20">
-            {/* Logo y Branding */}
-            <div className="flex items-center gap-4">
-              <div className="stats-icon animate-float">
-                <Coffee className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold font-poppins bg-theme-gradient bg-clip-text text-transparent">
-                  GastroBot
-                </h1>
-                <p className="text-sm text-slate-600 font-medium">Dashboard Administrador</p>
-              </div>
-            </div>
-
-            {/* Status y Controles */}
-            <div className="flex items-center gap-6">
-              {/* Status del Sistema */}
-              <div className="badge-success">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                <span>Sistema Activo</span>
-              </div>
-
-              {/* Separador */}
-              <div className="h-8 w-px bg-white/30 hidden md:block"></div>
-
-              {/* Theme Switcher con nuevo diseño */}
-              <ThemeSwitcher trigger="button" />
-
-              {/* Fecha Actual */}
-              <div className="glass-card px-4 py-2 hidden lg:flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">
-                  {new Date().toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long'
-                  })}
-                </span>
-              </div>
-
-              {/* Notificaciones */}
-              <button className="btn-glass-secondary w-10 h-10 p-0 rounded-full flex-center relative">
-                <Bell className="w-5 h-5" />
-                {estadoSistema?.reservas_hoy > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation Glassmorphism */}
-      <nav className="nav-glass">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-2 overflow-x-auto py-4 scrollbar-hide">
-            {[
-              { id: 'inicio', icon: Home, label: 'Inicio', feature: null },
-              { id: 'info', icon: Building, label: 'Información', feature: null },
-              { id: 'horarios', icon: Clock, label: 'Horarios', feature: null },
-              { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
-              { id: 'pedidos', icon: ShoppingBag, label: 'Pedidos', feature: null },
-              { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
-              { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
-              { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
-            ].filter(item => !item.feature || features[item.feature]).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-              >
-                <item.icon className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="font-medium text-sm whitespace-nowrap">
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardLayout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      features={features}
+    >
         {/* Mensajes Glassmorphism */}
         {mensaje && (
           <div className={`toast ${mensaje.tipo} mb-6 animate-slide-up`}>
@@ -502,151 +422,15 @@ function GastroBotDashboard() {
         )}
 
         {/* Contenido por Tab */}
-        {/* Contenido por Tab */}
         {activeTab === 'inicio' && (
-          <div className="dashboard-main animate-fade-in">
-            {/* Hero Section */}
-            <div className="flex-between mb-8">
-              <div>
-                <h1 className="text-4xl font-bold font-poppins bg-theme-gradient bg-clip-text text-transparent">
-                  Dashboard GastroBot
-                </h1>
-                <p className="text-slate-600 mt-2 text-lg">Bienvenido a tu panel de control glassmorphism</p>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <button className="btn-glass-primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Reserva
-                </button>
-              </div>
-            </div>
-
-            {/* Stats Cards */}
-            <EstadoSistema />
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-              {/* Próximas Reservas Glassmorphism */}
-              <div className="glass-card-lg p-6 animate-scale-in">
-                <div className="flex-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="stats-icon">
-                      <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-900">Próximas Reservas</h3>
-                      <p className="text-sm text-slate-600">Reservas confirmadas para hoy</p>
-                    </div>
-                  </div>
-                  <button
-                    className="btn-glass-secondary w-10 h-10 p-0 rounded-full"
-                    onClick={cargarEstadoSistema}
-                    disabled={loading}
-                  >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="space-content">
-                  {!estadoSistema?.proximas_reservas?.length ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
-                        <Calendar className="w-8 h-8 text-slate-400" />
-                      </div>
-                      <p className="text-slate-500 font-medium">No hay reservas próximas</p>
-                      <p className="text-xs text-slate-400 mt-1">Las nuevas reservas aparecerán aquí</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {estadoSistema.proximas_reservas.slice(0, 5).map((reserva, index) => (
-                        <div
-                          key={index}
-                          className="glass-card p-4 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02] group"
-                        >
-                          <div className="flex-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-theme-gradient flex-center">
-                                <User className="w-5 h-5 text-white" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-900 group-hover:text-slate-700 transition-colors">
-                                  {reserva.nombre}
-                                </p>
-                                <p className="text-sm text-slate-600">{reserva.personas} personas</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-lg text-slate-900">{reserva.hora?.substring(0, 5)}</p>
-                              <p className="text-xs text-slate-500">Mesa {reserva.mesa_id}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Menu Status Glassmorphism */}
-              <div className="glass-card-lg p-6 animate-scale-in" style={{ animationDelay: '200ms' }}>
-                <div className="flex-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="stats-icon">
-                      <Menu className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-900">Estado del Menú</h3>
-                      <p className="text-sm text-slate-600">Platos disponibles y destacados</p>
-                    </div>
-                  </div>
-                  <button
-                    className="btn-glass-primary text-xs px-3 py-1 h-8"
-                    onClick={() => setModalPlato(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Nuevo Plato
-                  </button>
-                </div>
-
-                <div className="space-content">
-                  {!menu.categorias?.length ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
-                        <Coffee className="w-8 h-8 text-slate-400" />
-                      </div>
-                      <p className="text-slate-500 font-medium">No hay platos en el menú</p>
-                      <p className="text-xs text-slate-400 mt-1">Comienza agregando categorías y platos</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {menu.categorias.slice(0, 2).map((categoria, index) => (
-                        <div key={index} className="glass-card p-4">
-                          <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-theme-gradient"></div>
-                            {categoria.nombre}
-                          </h4>
-                          <div className="space-y-2">
-                            {categoria.platos?.slice(0, 3).map((plato, platoIndex) => (
-                              <div key={platoIndex} className="flex-between p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-all duration-300">
-                                <div>
-                                  <p className="font-medium text-slate-900">{plato.nombre}</p>
-                                  <p className="text-sm font-bold text-theme-primary">€{plato.precio}</p>
-                                </div>
-                                <div className={`badge-glass ${plato.disponible ? 'text-emerald-600' : 'text-red-600'}`}>
-                                  {plato.disponible ? 'Disponible' : 'Agotado'}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <Inicio
+            estadoSistema={estadoSistema}
+            loading={loading}
+            onNuevaReserva={() => setModalReserva(true)}
+            onVerReservas={() => setActiveTab('reservas')}
+            onVerMenu={() => setActiveTab('menu')}
+            onVerEstadisticas={() => setActiveTab('inicio')}
+          />
         )}
 
         {activeTab === 'info' && (
@@ -978,7 +762,7 @@ function GastroBotDashboard() {
         {activeTab === 'mesas' && features.TABLES && <MesasTab mesas={mesas} />}
         {activeTab === 'menu' && features.MENU && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && features.POLICIES && <PoliciesTab politicas={politicas} />}
-   </main>
+    </DashboardLayout>
 
       {/* Modal Nueva Reserva */}
       {modalReserva && (
