@@ -24,14 +24,10 @@ import {
 } from 'lucide-react';
 
 // Componentes de la UI moderna
-import { Card, CardHeader, CardBody, CardTitle, CardDescription } from './components/ui/Card';
-import Button from './components/ui/Button';
-import Badge from './components/ui/Badge';
 import ThemeSwitcher from './components/theme/ThemeSwitcher';
 import { useTheme } from './context/ThemeContext';
 
 // Componentes de las páginas
-import InfoGeneralTab from './components/restaurant/InfoGeneralTab';
 import MesasTab from './components/tables/MesasTab';
 import PoliciesTab from './components/policies/PoliciesTab';
 import MenuTab from './components/menu/MenuTab';
@@ -42,7 +38,6 @@ import { useAppContext } from './context/AppContext';
 
 // Importar configuración dinámica y features
 import { getApiConfig, useFeatures, logFeatureConfig } from './config/features';
-import FeatureWrapper from './components/common/FeatureWrapper';
 
 // Configuración dinámica de API
 const apiConfig = getApiConfig();
@@ -56,7 +51,6 @@ if (process.env.NODE_ENV === 'development') {
 function GastroBotDashboard() {
   const { datosEspejo, actualizarDatosEspejo } = useAppContext();
   const { features } = useFeatures();
-  const { currentThemeConfig } = useTheme();
   const [activeTab, setActiveTab] = useState('inicio');
   const [estadoSistema, setEstadoSistema] = useState(null);
   // Obtener datos del contexto
@@ -95,7 +89,9 @@ function GastroBotDashboard() {
         setEstadoSistema(data.estadisticas);
       }
     } catch (error) {
-      console.error('Error cargando estado:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error cargando estado:', error);
+      }
     }
   }, []);
 
@@ -128,7 +124,9 @@ function GastroBotDashboard() {
       const datosCompletos = await duracionResponse.json();
       const duracionActual = datosCompletos?.politicas?.tiempo_mesa_minutos || 120;
       
-      console.log(`📊 [DASHBOARD] Usando duración actualizada: ${duracionActual} minutos`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 [DASHBOARD] Usando duración actualizada: ${duracionActual} minutos`);
+      }
       
       // Primero buscar mesa disponible con duración específica
       const busquedaResponse = await fetch(`${API_URL}/buscar-mesa`, {
@@ -296,7 +294,9 @@ function GastroBotDashboard() {
         mostrarMensaje(data.mensaje || 'Error al actualizar', 'error');
       }
     } catch (error) {
-      console.error('Error guardando información:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error guardando información:', error);
+      }
       mostrarMensaje('Error al guardar los cambios', 'error');
     } finally {
       setLoading(false);
@@ -398,64 +398,6 @@ function GastroBotDashboard() {
   };
 
 
-  // Componente del Menú
-  const TabMenu = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Gestión del Menú</h2>
-          <button
-            onClick={() => setModalPlato(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Plato
-          </button>
-        </div>
-        
-        {menu.categorias.map((categoria) => (
-          <div key={categoria.id} className="mb-8">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">{categoria.nombre}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {categoria.platos?.map((plato) => (
-                <div key={plato.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{plato.nombre}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{plato.descripcion}</p>
-                      <div className="flex items-center mt-2">
-                        <span className="font-bold text-lg">{plato.precio}€</span>
-                        {plato.alergenos?.length > 0 && (
-                          <span className="ml-4 text-xs text-gray-500">
-                            Alérgenos: {plato.alergenos.join(', ')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => toggleDisponibilidadPlato(plato.id, plato.disponible)}
-                      className={`ml-4 p-2 rounded-lg transition-colors ${
-                        plato.disponible
-                          ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                          : 'bg-red-100 text-red-600 hover:bg-red-200'
-                      }`}
-                    >
-                      {plato.disponible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Componente de Mesas - usando el componente actualizado
-  const TabMesas = () => <MesasTab mesas={mesas} />;
-
-  // Removido TabPoliticas - usando PoliciesTab importado
 
   return (
     <div className="dashboard-container">
