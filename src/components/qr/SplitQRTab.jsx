@@ -1,6 +1,6 @@
 /**
  * @fileoverview Componente principal para la gestión de códigos QR con funcionalidad SplitQR
- * Incluye lista, búsqueda, filtros y estadísticas
+ * Incluye lista, búsqueda, filtros, estadísticas y QR por mesa
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -15,13 +15,16 @@ import {
   Layers,
   Download,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  CreditCard,
+  Users
 } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import QRCard from './QRCard';
 import SplitQRModal from './SplitQRModal';
 import QRPreviewModal from './QRPreviewModal';
+import TableQRTab from './TableQRTab';
 import { calculateQRStats, generateCustomQR } from '../../utils/qrGenerator';
 
 /**
@@ -83,6 +86,7 @@ const DEMO_QRS = [
  * @returns {JSX.Element} Componente SplitQRTab
  */
 const SplitQRTab = () => {
+  const [activeTab, setActiveTab] = useState('general'); // 'general' | 'tables'
   const [qrs, setQrs] = useState(DEMO_QRS);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -210,14 +214,50 @@ const SplitQRTab = () => {
           </p>
         </div>
 
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          icon={Plus}
-          size="lg"
-        >
-          Generar nuevo QR
-        </Button>
+        {activeTab === 'general' && (
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            icon={Plus}
+            size="lg"
+          >
+            Generar nuevo QR
+          </Button>
+        )}
       </div>
+
+      {/* Pestañas de navegación */}
+      <div className="glass-card p-1">
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'general'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
+          >
+            <QrCode className="w-4 h-4" />
+            QR Generales
+          </button>
+          <button
+            onClick={() => setActiveTab('tables')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'tables'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            QR por Mesa
+          </button>
+        </div>
+      </div>
+
+      {/* Contenido según la pestaña activa */}
+      {activeTab === 'tables' ? (
+        <TableQRTab />
+      ) : (
+        <div className="space-y-6">
 
       {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -381,20 +421,26 @@ const SplitQRTab = () => {
         )}
       </div>
 
-      {/* Modales */}
-      <SplitQRModal
-        isOpen={showCreateModal}
-        onClose={closeModals}
-        onSave={handleSaveQR}
-        editingQR={editingQR}
-      />
+      {/* Modales para pestaña general */}
+      {activeTab === 'general' && (
+        <>
+          <SplitQRModal
+            isOpen={showCreateModal}
+            onClose={closeModals}
+            onSave={handleSaveQR}
+            editingQR={editingQR}
+          />
 
-      <QRPreviewModal
-        isOpen={showPreviewModal}
-        onClose={closeModals}
-        qr={selectedQR}
-        onEdit={handleEditQR}
-      />
+          <QRPreviewModal
+            isOpen={showPreviewModal}
+            onClose={closeModals}
+            qr={selectedQR}
+            onEdit={handleEditQR}
+          />
+        </>
+      )}
+        </div>
+      )}
     </div>
   );
 };
