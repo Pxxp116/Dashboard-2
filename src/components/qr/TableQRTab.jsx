@@ -110,8 +110,8 @@ const TableQRTab = () => {
   const filteredQRs = useMemo(() => {
     let filtered = tableQRs.filter(qr => {
       const matchesSearch =
-        qr.mesa_numero.toString().includes(searchTerm) ||
-        qr.name.toLowerCase().includes(searchTerm.toLowerCase());
+        (qr.mesa_numero?.toString() || '').includes(searchTerm) ||
+        (qr.name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesStatus = filterStatus === 'all' || qr.paymentStatus === filterStatus;
 
