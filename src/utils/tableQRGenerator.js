@@ -45,7 +45,9 @@ export const generateTableQR = (mesa, config = {}) => {
     paymentMethods = ['card', 'cash', 'bizum']
   } = config;
 
-  const tablePaymentUrl = `${baseUrl}/mesa/${mesa.id}/pago`;
+  // ACTUALIZADO: Usar URL del servicio de pagos independiente
+  const paymentBaseUrl = process.env.REACT_APP_PAYMENT_URL || baseUrl;
+  const tablePaymentUrl = `${paymentBaseUrl}/mesa/${mesa.id}/pago`;
 
   const qrData = {
     type: 'table_payment',
