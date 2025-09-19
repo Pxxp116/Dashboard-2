@@ -46,6 +46,8 @@ export const generateTableQR = (mesa, config = {}) => {
   } = config;
 
   // ACTUALIZADO: Usar URL del servicio de pagos independiente
+  // En Railway: https://${{ gastrobot-payment.RAILWAY_PUBLIC_DOMAIN }}
+  // En desarrollo: http://localhost:3002
   const paymentBaseUrl = process.env.REACT_APP_PAYMENT_URL || baseUrl;
   const tablePaymentUrl = `${paymentBaseUrl}/mesa/${mesa.id}/pago`;
 
