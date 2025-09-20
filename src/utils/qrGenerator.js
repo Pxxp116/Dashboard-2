@@ -29,7 +29,7 @@ export const generateQRUrl = (data, size = 300) => {
  * @returns {Array} Array de objetos QR
  */
 export const generateSplitQR = (baseData, sections) => {
-  const baseUrl = baseData.baseUrl || 'https://gastrobot.com';
+  const baseUrl = baseData.baseUrl || process.env.REACT_APP_PAYMENT_URL || process.env.REACT_APP_BASE_URL || 'https://gastrobot-payment.railway.app';
 
   return sections.map(section => {
     const qrData = {
@@ -113,7 +113,7 @@ export const generateCustomQR = (config) => {
   const qrData = {
     restaurante,
     tipo: type,
-    url: customUrl || `https://gastrobot.com/${type}`,
+    url: customUrl || `${process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app'}/${type}`,
     timestamp: new Date().toISOString()
   };
 

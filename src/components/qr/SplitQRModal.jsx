@@ -85,7 +85,7 @@ const SplitQRModal = ({ isOpen, onClose, onSave, editingQR = null }) => {
     if (formData.customUrl && isValidUrl(formData.customUrl)) {
       setPreviewUrl(generateQRUrl(formData.customUrl, 200));
     } else if (formData.type) {
-      const defaultUrl = `https://gastrobot.com/${formData.type}`;
+      const defaultUrl = `${process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app'}/${formData.type}`;
       setPreviewUrl(generateQRUrl(defaultUrl, 200));
     }
   }, [formData.customUrl, formData.type]);
@@ -133,10 +133,11 @@ const SplitQRModal = ({ isOpen, onClose, onSave, editingQR = null }) => {
    * Agrega secciones predefinidas para SplitQR
    */
   const addPredefinedSections = () => {
+    const baseUrl = process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app';
     const predefined = [
-      { id: 'bebidas', name: 'Carta de Bebidas', description: 'Bebidas y cócteles', url: 'https://gastrobot.com/bebidas' },
-      { id: 'postres', name: 'Carta de Postres', description: 'Dulces y postres', url: 'https://gastrobot.com/postres' },
-      { id: 'menu-dia', name: 'Menú del Día', description: 'Especiales diarios', url: 'https://gastrobot.com/menu-del-dia' }
+      { id: 'bebidas', name: 'Carta de Bebidas', description: 'Bebidas y cócteles', url: `${baseUrl}/menu/bebidas` },
+      { id: 'postres', name: 'Carta de Postres', description: 'Dulces y postres', url: `${baseUrl}/menu/postres` },
+      { id: 'menu-dia', name: 'Menú del Día', description: 'Especiales diarios', url: `${baseUrl}/menu/menu-del-dia` }
     ];
     setSplitSections(predefined);
   };
