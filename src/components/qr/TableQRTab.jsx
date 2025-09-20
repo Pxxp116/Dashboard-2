@@ -33,12 +33,15 @@ import { useAppContext } from '../../context/AppContext';
 import {
   PAYMENT_STATUS,
   generateTableQR,
+  generateEnhancedTableQR,
+  generateEnhancedMultipleTableQRs,
   calculateTablePaymentStats,
   exportPaymentDataToCSV,
   formatCurrency,
   validateTableQRs
 } from '../../utils/tableQRGenerator';
 import { debugQRGeneration, validateMesaData } from '../../utils/qrDebugger';
+import restaurantDataService from '../../services/restaurantDataService';
 
 /**
  * Tab principal de QR por mesa
@@ -93,13 +96,13 @@ const TableQRTab = () => {
   };
 
   /**
-   * Genera QRs para todas las mesas
+   * Genera QRs para todas las mesas con contexto del restaurante
    */
   const generateQRsForAllTables = async () => {
     setLoading(true);
 
     try {
-      console.log('🚀 Iniciando generación de QRs para todas las mesas');
+      console.log('🚀 Iniciando generación de QRs mejorados para todas las mesas');
 
       // Validar datos de mesas antes de procesar
       if (!validateMesaData(mesas)) {
@@ -131,7 +134,6 @@ const TableQRTab = () => {
         const duplicados = ids.filter((id, index) => ids.indexOf(id) !== index);
         console.error('IDs duplicados:', [...new Set(duplicados)]);
 
-        // Mostrar alerta al usuario
         alert('Error: Se detectaron mesas con IDs duplicados. Por favor, revisa la configuración de las mesas.');
         setLoading(false);
         return;
@@ -139,19 +141,61 @@ const TableQRTab = () => {
 
       console.log(`✅ ${mesasNormalizadas.length} mesas listas para generar QR`);
 
-      // Generar QRs
-      const qrs = await tableQRService.createMultipleTableQRs(mesasNormalizadas);
+      // Cargar datos del restaurante para contexto
+      console.log('🏪 Cargando datos del restaurante para contexto de QRs...');
+      let restaurantData = {};
+
+      try {
+        const [restaurantInfo, menu] = await Promise.all([
+          restaurantDataService.getRestaurantInfo(),
+          restaurantDataService.getRestaurantMenu()
+        ]);
+
+        restaurantData = {
+          restaurante: restaurantInfo,
+          menu: menu,
+          config: {
+            baseUrl: 'https://gastrobot.com',
+            enableSplitPayment: true,
+            paymentMethods: ['card', 'cash', 'bizum']
+          }
+        };
+
+        console.log(`✅ Contexto del restaurante cargado: ${restaurantInfo.nombre}, ${menu.metadata?.total_platos || 0} platos en menú`);
+
+      } catch (error) {
+        console.warn('⚠️ No se pudo cargar contexto del restaurante, usando configuración básica:', error);
+        restaurantData = {
+          restaurante: { nombre: 'GastroBot Restaurant' },
+          menu: { categorias: [] },
+          config: {}
+        };
+      }
+
+      // Generar QRs mejorados con contexto del restaurante
+      const enhancedQRs = generateEnhancedMultipleTableQRs(mesasNormalizadas, restaurantData);
+
+      // Crear QRs usando el servicio (que los guardará en el backend)
+      const qrs = await tableQRService.createMultipleTableQRs(mesasNormalizadas, restaurantData.config);
+
+      // Agregar contexto mejorado a los QRs del servicio
+      const finalQRs = qrs.map((qr, index) => ({
+        ...qr,
+        enhanced: true,
+        restaurant_context: enhancedQRs[index]?.restaurant_context,
+        restaurant_metadata: enhancedQRs[index]?.restaurant_metadata
+      }));
 
       // Debug y validación
-      debugQRGeneration(mesasNormalizadas, qrs);
+      debugQRGeneration(mesasNormalizadas, finalQRs);
 
-      if (!validateTableQRs(qrs)) {
+      if (!validateTableQRs(finalQRs)) {
         alert('Advertencia: Se detectaron posibles problemas con los QR generados. Revisa la consola para más detalles.');
       }
 
-      setTableQRs(qrs);
+      setTableQRs(finalQRs);
 
-      console.log(`✅ ${qrs.length} QRs generados exitosamente`);
+      console.log(`✅ ${finalQRs.length} QRs mejorados generados exitosamente con contexto de ${restaurantData.restaurante.nombre}`);
 
     } catch (error) {
       console.error('❌ Error generando QRs:', error);

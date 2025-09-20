@@ -25,7 +25,8 @@ import {
   Check,
   X,
   Trash2,
-  Edit2
+  Edit2,
+  ChefHat
 } from 'lucide-react';
 import {
   SPLIT_MODES,
@@ -34,6 +35,7 @@ import {
   calculateItemBasedSplit,
   generateEmptyPaymentData
 } from '../utils/tableQRGenerator';
+import restaurantDataService from '../services/restaurantDataService';
 
 /**
  * Página de pago para clientes
@@ -53,25 +55,55 @@ const TablePaymentPage = ({ mesaId }) => {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [error, setError] = useState(null);
 
-  // Simular carga de datos de la mesa
+  // Cargar datos reales de la mesa
   useEffect(() => {
     const loadTableData = async () => {
       setLoading(true);
       try {
-        // Inicializar con configuración vacía
-        const emptyData = generateEmptyPaymentData(mesaId);
+        console.log(`🔄 [Dashboard] Cargando datos para Mesa ${mesaId}...`);
+
+        // Cargar datos completos del restaurante para esta mesa
+        const data = await restaurantDataService.getCompleteTableData(mesaId);
+
+        console.log(`✅ [Dashboard] Datos cargados para Mesa ${mesaId}:`, {
+          restaurante: data.restaurante.nombre,
+          cuenta_items: data.cuenta.items?.length || 0,
+          menu_categorias: data.menu.categorias?.length || 0,
+          source: data.metadata?.source
+        });
+
+        // Si no hay cuenta específica, permitir configurarla desde el menú
+        let initialItems = data.cuenta.items || [];
+        let needsConfiguration = data.cuenta.metadata?.needs_configuration || false;
+
+        // Si la cuenta está vacía pero hay menú disponible, mostrar opciones del menú
+        if (initialItems.length === 0 && data.menu.categorias?.length > 0) {
+          console.log('📋 [Dashboard] Cuenta vacía, permitiendo configuración desde menú del restaurante');
+          needsConfiguration = true;
+        }
+
         setTableData({
-          mesa_numero: mesaId || '1',
-          mesa_id: mesaId || 1,
-          ...emptyData
+          mesa_numero: data.mesa.numero,
+          mesa_id: data.mesa.id,
+          items: initialItems,
+          totalAmount: data.cuenta.total || 0,
+          restaurante: data.restaurante.nombre,
+          tipo_cocina: data.restaurante.tipo_cocina,
+          direccion: data.restaurante.direccion,
+          telefono: data.restaurante.telefono,
+          menu: data.menu, // Incluir menú completo para configuración
+          needsConfiguration,
+          metadata: data.metadata
         });
 
         // Inicializar con el cliente actual como primer participante
         setParticipants([
           { id: 1, name: '', phone: '', selectedItems: [], amount: 0 }
         ]);
+
       } catch (err) {
-        setError('Error al cargar los datos de la mesa');
+        console.error('❌ [Dashboard] Error cargando datos de Mesa:', err);
+        setError('Error al cargar los datos de la mesa. Intenta recargar la página.');
       } finally {
         setLoading(false);
       }
@@ -118,9 +150,10 @@ const TablePaymentPage = ({ mesaId }) => {
   const addItem = () => {
     const newItem = {
       id: Date.now(),
-      name: '',
-      price: 0,
-      category: 'General'
+      nombre: '',
+      precio: 0,
+      categoria: 'General',
+      cantidad: 1
     };
     setTableData(prev => ({
       ...prev,
@@ -129,18 +162,61 @@ const TablePaymentPage = ({ mesaId }) => {
   };
 
   /**
+   * Agrega un producto del menú del restaurante a la cuenta
+   */
+  const addMenuItemToAccount = (plato, categoria) => {
+    console.log(`📝 [Dashboard] Agregando ${plato.nombre} a la cuenta de Mesa ${tableData.mesa_numero}`);
+
+    const newItem = {
+      id: Date.now(),
+      menu_id: plato.id,
+      nombre: plato.nombre,
+      precio: Number(plato.precio),
+      categoria: categoria.nombre,
+      descripcion: plato.descripcion || '',
+      cantidad: 1,
+      alergenos: plato.alergenos || []
+    };
+
+    setTableData(prev => {
+      const updatedItems = [...prev.items, newItem];
+      const newTotal = updatedItems.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+      return {
+        ...prev,
+        items: updatedItems,
+        totalAmount: newTotal
+      };
+    });
+  };
+
+  /**
    * Actualiza un producto
    */
   const updateItem = (index, field, value) => {
-    setTableData(prev => ({
-      ...prev,
-      items: prev.items.map((item, i) =>
-        i === index ? { ...item, [field]: field === 'price' ? parseFloat(value) || 0 : value } : item
-      ),
-      totalAmount: field === 'price' ?
-        prev.items.reduce((sum, item, i) => sum + (i === index ? (parseFloat(value) || 0) : item.price), 0) :
-        prev.totalAmount
-    }));
+    setTableData(prev => {
+      const updatedItems = prev.items.map((item, i) => {
+        if (i === index) {
+          const updatedItem = { ...item };
+          if (field === 'precio' || field === 'cantidad') {
+            updatedItem[field] = parseFloat(value) || 0;
+          } else {
+            updatedItem[field] = value;
+          }
+          return updatedItem;
+        }
+        return item;
+      });
+
+      // Recalcular total
+      const newTotal = updatedItems.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+      return {
+        ...prev,
+        items: updatedItems,
+        totalAmount: newTotal
+      };
+    });
   };
 
   /**
@@ -149,10 +225,12 @@ const TablePaymentPage = ({ mesaId }) => {
   const removeItem = (index) => {
     setTableData(prev => {
       const newItems = prev.items.filter((_, i) => i !== index);
+      const newTotal = newItems.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
       return {
         ...prev,
         items: newItems,
-        totalAmount: newItems.reduce((sum, item) => sum + item.price, 0)
+        totalAmount: newTotal
       };
     });
 
@@ -163,6 +241,35 @@ const TablePaymentPage = ({ mesaId }) => {
         ...participant,
         selectedItems: participant.selectedItems.filter(id => id !== itemId)
       })));
+    }
+  };
+
+  /**
+   * Guarda la cuenta configurada en el backend
+   */
+  const saveAccountToBackend = async () => {
+    try {
+      console.log(`💾 [Dashboard] Guardando cuenta de Mesa ${tableData.mesa_numero}...`);
+
+      const accountData = {
+        items: tableData.items,
+        total: tableData.totalAmount,
+        subtotal: tableData.totalAmount,
+        participants: participants,
+        split_mode: splitMode,
+        status: 'active'
+      };
+
+      await restaurantDataService.updateTableAccount(tableData.mesa_id, accountData);
+
+      console.log(`✅ [Dashboard] Cuenta de Mesa ${tableData.mesa_numero} guardada`);
+
+      // Mostrar mensaje de éxito
+      alert(`Cuenta de Mesa ${tableData.mesa_numero} guardada correctamente`);
+
+    } catch (error) {
+      console.error('❌ [Dashboard] Error guardando cuenta:', error);
+      alert('Error al guardar la cuenta. Intenta de nuevo.');
     }
   };
 
@@ -332,14 +439,30 @@ const TablePaymentPage = ({ mesaId }) => {
                     <h3 className="font-medium text-gray-900 flex items-center gap-2">
                       <ShoppingCart className="w-4 h-4" />
                       Productos de la cuenta
+                      {tableData?.restaurante && (
+                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          {tableData.restaurante}
+                        </span>
+                      )}
                     </h3>
-                    <button
-                      onClick={addItem}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Agregar
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={addItem}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Manual
+                      </button>
+                      {tableData?.menu?.categorias?.length > 0 && (
+                        <button
+                          onClick={() => setCurrentStep('menu')}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <ChefHat className="w-3 h-3" />
+                          Del Menú
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {tableData.items.length === 0 ? (
                     <div className="text-center py-6 border-2 border-dashed border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -357,20 +480,28 @@ const TablePaymentPage = ({ mesaId }) => {
                     <div className="space-y-3">
                       {tableData.items.map((item, index) => (
                         <div key={item.id} className="bg-white rounded-lg p-3 border">
-                          <div className="grid grid-cols-3 gap-2 mb-2">
+                          <div className="grid grid-cols-4 gap-2 mb-2">
                             <input
                               type="text"
-                              value={item.name}
-                              onChange={(e) => updateItem(index, 'name', e.target.value)}
+                              value={item.nombre || ''}
+                              onChange={(e) => updateItem(index, 'nombre', e.target.value)}
                               placeholder="Nombre del producto"
                               className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             />
                             <input
                               type="number"
                               step="0.01"
-                              value={item.price}
-                              onChange={(e) => updateItem(index, 'price', e.target.value)}
+                              value={item.precio || 0}
+                              onChange={(e) => updateItem(index, 'precio', e.target.value)}
                               placeholder="Precio"
+                              className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.cantidad || 1}
+                              onChange={(e) => updateItem(index, 'cantidad', e.target.value)}
+                              placeholder="Cant."
                               className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             />
                             <button
@@ -380,10 +511,18 @@ const TablePaymentPage = ({ mesaId }) => {
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
-                          {item.name && item.price > 0 && (
+                          {item.nombre && item.precio > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-700">{item.name}</span>
-                              <span className="font-medium">{formatCurrency(item.price)}</span>
+                              <div>
+                                <span className="text-gray-700">{item.nombre}</span>
+                                {item.categoria && (
+                                  <span className="text-xs text-gray-500 ml-2">• {item.categoria}</span>
+                                )}
+                              </div>
+                              <span className="font-medium">
+                                {item.cantidad > 1 && `${item.cantidad}x `}
+                                {formatCurrency(item.precio * (item.cantidad || 1))}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -436,6 +575,105 @@ const TablePaymentPage = ({ mesaId }) => {
                  tableData.items.length === 0 ? 'Agrega productos para continuar' :
                  'Continuar a división de pago'}
               </button>
+            </div>
+          )}
+
+          {/* Sección Especial: Seleccionar del Menú del Restaurante */}
+          {currentStep === 'menu' && tableData?.menu?.categorias?.length > 0 && (
+            <div className="space-y-4">
+              {/* Header del menú */}
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                      <ChefHat className="w-4 h-4" />
+                      Menú de {tableData.restaurante}
+                    </h3>
+                    {tableData.tipo_cocina && (
+                      <p className="text-sm text-gray-600">{tableData.tipo_cocina}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setCurrentStep('details')}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Categorías del menú */}
+                <div className="space-y-4">
+                  {tableData.menu.categorias.map((categoria) => (
+                    <div key={categoria.id} className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {categoria.nombre}
+                        {categoria.descripcion && (
+                          <span className="text-sm text-gray-600 font-normal ml-2">
+                            • {categoria.descripcion}
+                          </span>
+                        )}
+                      </h4>
+
+                      {categoria.platos && categoria.platos.length > 0 ? (
+                        <div className="grid gap-3">
+                          {categoria.platos
+                            .filter(plato => plato.disponible !== false)
+                            .map((plato) => (
+                              <div
+                                key={plato.id}
+                                className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <h5 className="font-medium text-gray-900">{plato.nombre}</h5>
+                                    {plato.descripcion && (
+                                      <p className="text-sm text-gray-600 mt-1">{plato.descripcion}</p>
+                                    )}
+                                    {plato.alergenos && plato.alergenos.length > 0 && (
+                                      <p className="text-xs text-amber-600 mt-1">
+                                        Alérgenos: {plato.alergenos.join(', ')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 ml-4">
+                                    <span className="font-bold text-gray-900">
+                                      {formatCurrency(plato.precio)}
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        addMenuItemToAccount(plato, categoria);
+                                        // Volver a detalles después de agregar
+                                        setCurrentStep('details');
+                                      }}
+                                      className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition-colors text-sm font-medium flex items-center gap-1"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      Agregar
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No hay platos disponibles en esta categoría</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Botón para guardar cuenta */}
+                {tableData.items?.length > 0 && (
+                  <div className="mt-6 pt-4 border-t">
+                    <button
+                      onClick={saveAccountToBackend}
+                      className="w-full bg-blue-500 text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      💾 Guardar Cuenta Configurada
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

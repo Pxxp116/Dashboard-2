@@ -42,7 +42,9 @@ export const generateTableQR = (mesa, config = {}) => {
     baseUrl = 'https://gastrobot.com',
     restaurante = 'GastroBot Restaurant',
     enableSplitPayment = true,
-    paymentMethods = ['card', 'cash', 'bizum']
+    paymentMethods = ['card', 'cash', 'bizum'],
+    restaurantInfo = null, // Nueva información del restaurante
+    menuAvailable = false // Indica si hay menú disponible
   } = config;
 
   // CRÍTICO: Validación y obtención del ID único de la mesa
@@ -71,6 +73,19 @@ export const generateTableQR = (mesa, config = {}) => {
     url: tablePaymentUrl,
     split_enabled: enableSplitPayment,
     payment_methods: paymentMethods,
+    restaurant_info: restaurantInfo ? {
+      nombre: restaurantInfo.nombre || restaurante,
+      tipo_cocina: restaurantInfo.tipo_cocina,
+      direccion: restaurantInfo.direccion,
+      telefono: restaurantInfo.telefono,
+      web: restaurantInfo.web
+    } : null,
+    menu_available: menuAvailable,
+    mesa_info: {
+      capacidad: mesa.capacidad || 4,
+      zona: mesa.zona || 'interior',
+      ubicacion: mesa.ubicacion
+    },
     timestamp: new Date().toISOString()
   };
 
@@ -78,13 +93,20 @@ export const generateTableQR = (mesa, config = {}) => {
     id: generateQRId(),
     mesa_id: mesaId,
     mesa_numero: mesaNumero,
-    name: `Mesa ${mesaNumero} - Pago`,
-    description: `Código QR para pagos en Mesa ${mesaNumero} - ${mesa.capacidad || 4} personas`,
+    name: `Mesa ${mesaNumero} - ${restaurantInfo?.nombre || restaurante}`,
+    description: `Código QR para pagos en Mesa ${mesaNumero} - ${restaurantInfo?.nombre || restaurante} (${mesa.capacidad || 4} personas)`,
     type: 'table_payment',
     data: JSON.stringify(qrData),
     url: generateQRUrl(tablePaymentUrl),
     publicUrl: tablePaymentUrl,
     paymentUrl: tablePaymentUrl,
+    restaurant_context: restaurantInfo ? {
+      nombre: restaurantInfo.nombre,
+      tipo_cocina: restaurantInfo.tipo_cocina,
+      direccion: restaurantInfo.direccion,
+      telefono: restaurantInfo.telefono
+    } : null,
+    menu_available: menuAvailable,
     created: new Date().toISOString(),
     scanCount: 0,
     active: true,
@@ -123,6 +145,53 @@ export const validateTableQRs = (qrs) => {
 
   console.log('✅ Validación exitosa: Todos los QR tienen URLs únicas');
   return true;
+};
+
+/**
+ * Genera un QR con contexto completo del restaurante
+ * @param {Object} mesa - Objeto mesa
+ * @param {Object} restaurantData - Datos completos del restaurante
+ * @returns {Object} QR generado con contexto del restaurante
+ */
+export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
+  const { restaurante, menu, config = {} } = restaurantData;
+
+  const enhancedConfig = {
+    baseUrl: config.baseUrl || 'https://gastrobot.com',
+    restaurante: restaurante?.nombre || 'GastroBot Restaurant',
+    enableSplitPayment: config.enableSplitPayment !== false,
+    paymentMethods: config.paymentMethods || ['card', 'cash', 'bizum'],
+    restaurantInfo: restaurante,
+    menuAvailable: menu?.categorias?.length > 0
+  };
+
+  console.log(`🎯 Generando QR mejorado para Mesa ${mesa.numero} de ${enhancedConfig.restaurante}`);
+
+  const qr = generateTableQR(mesa, enhancedConfig);
+
+  // Agregar metadatos adicionales
+  qr.enhanced = true;
+  qr.restaurant_metadata = {
+    has_menu: enhancedConfig.menuAvailable,
+    menu_categories: menu?.categorias?.length || 0,
+    menu_items: menu?.categorias?.reduce((total, cat) =>
+      total + (cat.platos?.length || 0), 0) || 0,
+    last_updated: new Date().toISOString()
+  };
+
+  return qr;
+};
+
+/**
+ * Genera múltiples QRs mejorados con contexto del restaurante
+ * @param {Array} mesas - Array de mesas
+ * @param {Object} restaurantData - Datos completos del restaurante
+ * @returns {Array} Array de QRs generados con contexto
+ */
+export const generateEnhancedMultipleTableQRs = (mesas, restaurantData = {}) => {
+  console.log(`🏪 Generando ${mesas.length} QRs mejorados para ${restaurantData.restaurante?.nombre || 'GastroBot Restaurant'}`);
+
+  return mesas.map(mesa => generateEnhancedTableQR(mesa, restaurantData));
 };
 
 /**
