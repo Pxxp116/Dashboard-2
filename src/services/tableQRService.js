@@ -426,6 +426,265 @@ class TableQRService {
       return false;
     }
   }
+
+  /**
+   * Configura cuenta de mesa con productos del menú
+   * @param {number} mesaId - ID de la mesa
+   * @param {Object} tableOrderData - Datos de la cuenta de mesa
+   * @returns {Promise<Object>} QR de mesa actualizado
+   */
+  async configureTableOrder(mesaId, tableOrderData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/configure-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tableOrderData)
+      });
+
+      if (!response.ok) throw new Error('Error al configurar cuenta de mesa');
+
+      const updatedQR = await response.json();
+      this.tableQRs.set(mesaId, updatedQR);
+
+      // Notificar a listeners
+      this.notifyListeners('table_order_configured', updatedQR);
+
+      return updatedQR;
+    } catch (error) {
+      console.error('Error configuring table order:', error);
+
+      // Actualizar localmente en caso de error de red
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR) {
+        const updatedQR = {
+          ...currentQR,
+          ...tableOrderData,
+          lastUpdated: new Date().toISOString()
+        };
+        this.tableQRs.set(mesaId, updatedQR);
+        return updatedQR;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Agrega producto a la cuenta de mesa
+   * @param {number} mesaId - ID de la mesa
+   * @param {Object} item - Producto a agregar
+   * @returns {Promise<Object>} QR de mesa actualizado
+   */
+  async addItemToTableOrder(mesaId, item) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/add-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item })
+      });
+
+      if (!response.ok) throw new Error('Error al agregar producto');
+
+      const updatedQR = await response.json();
+      this.tableQRs.set(mesaId, updatedQR);
+
+      // Notificar a listeners
+      this.notifyListeners('item_added_to_order', { qr: updatedQR, item });
+
+      return updatedQR;
+    } catch (error) {
+      console.error('Error adding item to table order:', error);
+
+      // Actualizar localmente
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR) {
+        const updatedItems = [...(currentQR.items || []), item];
+        const newTotal = updatedItems.reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
+
+        const updatedQR = {
+          ...currentQR,
+          items: updatedItems,
+          totalAmount: newTotal,
+          lastUpdated: new Date().toISOString()
+        };
+
+        this.tableQRs.set(mesaId, updatedQR);
+        return updatedQR;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Remueve producto de la cuenta de mesa
+   * @param {number} mesaId - ID de la mesa
+   * @param {number} itemIndex - Índice del producto a remover
+   * @returns {Promise<Object>} QR de mesa actualizado
+   */
+  async removeItemFromTableOrder(mesaId, itemIndex) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/remove-item`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemIndex })
+      });
+
+      if (!response.ok) throw new Error('Error al remover producto');
+
+      const updatedQR = await response.json();
+      this.tableQRs.set(mesaId, updatedQR);
+
+      // Notificar a listeners
+      this.notifyListeners('item_removed_from_order', updatedQR);
+
+      return updatedQR;
+    } catch (error) {
+      console.error('Error removing item from table order:', error);
+
+      // Actualizar localmente
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR && currentQR.items && itemIndex >= 0 && itemIndex < currentQR.items.length) {
+        const updatedItems = currentQR.items.filter((_, index) => index !== itemIndex);
+        const newTotal = updatedItems.reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
+
+        const updatedQR = {
+          ...currentQR,
+          items: updatedItems,
+          totalAmount: newTotal,
+          lastUpdated: new Date().toISOString()
+        };
+
+        this.tableQRs.set(mesaId, updatedQR);
+        return updatedQR;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza producto en la cuenta de mesa
+   * @param {number} mesaId - ID de la mesa
+   * @param {number} itemIndex - Índice del producto
+   * @param {Object} updatedItem - Datos actualizados del producto
+   * @returns {Promise<Object>} QR de mesa actualizado
+   */
+  async updateItemInTableOrder(mesaId, itemIndex, updatedItem) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/update-item`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemIndex, updatedItem })
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar producto');
+
+      const updatedQR = await response.json();
+      this.tableQRs.set(mesaId, updatedQR);
+
+      // Notificar a listeners
+      this.notifyListeners('item_updated_in_order', updatedQR);
+
+      return updatedQR;
+    } catch (error) {
+      console.error('Error updating item in table order:', error);
+
+      // Actualizar localmente
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR && currentQR.items && itemIndex >= 0 && itemIndex < currentQR.items.length) {
+        const updatedItems = currentQR.items.map((item, index) =>
+          index === itemIndex ? { ...item, ...updatedItem } : item
+        );
+        const newTotal = updatedItems.reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0);
+
+        const updatedQR = {
+          ...currentQR,
+          items: updatedItems,
+          totalAmount: newTotal,
+          lastUpdated: new Date().toISOString()
+        };
+
+        this.tableQRs.set(mesaId, updatedQR);
+        return updatedQR;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Marca la cuenta como lista para que los clientes escaneen
+   * @param {number} mesaId - ID de la mesa
+   * @returns {Promise<Object>} QR de mesa actualizado
+   */
+  async finalizeTableOrder(mesaId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/finalize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'ready_for_customers',
+          finalizedAt: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) throw new Error('Error al finalizar cuenta de mesa');
+
+      const updatedQR = await response.json();
+      this.tableQRs.set(mesaId, updatedQR);
+
+      // Notificar a listeners
+      this.notifyListeners('table_order_finalized', updatedQR);
+
+      return updatedQR;
+    } catch (error) {
+      console.error('Error finalizing table order:', error);
+
+      // Actualizar localmente
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR) {
+        const updatedQR = {
+          ...currentQR,
+          status: 'ready_for_customers',
+          finalizedAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+
+        this.tableQRs.set(mesaId, updatedQR);
+        return updatedQR;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el estado actual de una cuenta de mesa
+   * @param {number} mesaId - ID de la mesa
+   * @returns {Promise<Object>} Estado detallado de la cuenta
+   */
+  async getTableOrderStatus(mesaId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-qr/${mesaId}/order-status`);
+
+      if (!response.ok) throw new Error('Error al obtener estado de cuenta');
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting table order status:', error);
+
+      // Retornar estado del cache local
+      const currentQR = this.tableQRs.get(mesaId);
+      if (currentQR) {
+        return {
+          mesaId,
+          status: currentQR.status || 'configuring',
+          totalAmount: currentQR.totalAmount || 0,
+          itemCount: currentQR.items?.length || 0,
+          customerAssignments: currentQR.customerAssignments || {},
+          lastUpdated: currentQR.lastUpdated || currentQR.created
+        };
+      }
+
+      return null;
+    }
+  }
 }
 
 // Crear instancia singleton

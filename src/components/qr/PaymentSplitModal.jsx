@@ -23,6 +23,7 @@ import {
 import { Modal } from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import MenuSelector from './MenuSelector';
 import {
   SPLIT_MODES,
   calculateEqualSplit,
@@ -31,6 +32,7 @@ import {
   validateSplitPaymentData,
   generateDemoPaymentData
 } from '../../utils/tableQRGenerator';
+import tableQRService from '../../services/tableQRService';
 
 /**
  * Modal para configurar división de pagos
@@ -49,23 +51,17 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(false);
+  const [showMenuSelector, setShowMenuSelector] = useState(false);
 
   // Resetear formulario cuando se abre/cierra el modal
   useEffect(() => {
     if (isOpen && tableQR) {
-      // Si hay datos existentes, cargarlos
-      if (tableQR.totalAmount > 0) {
-        setTotalAmount(tableQR.totalAmount);
-        setParticipants(tableQR.participants || []);
-        setItems(tableQR.items || []);
-        setSplitMode(tableQR.splitMode || SPLIT_MODES.EQUAL);
-      } else {
-        // Inicializar con configuración vacía
-        setTotalAmount(0);
-        setItems([]);
-        setParticipants([]);
-        setSplitMode(SPLIT_MODES.EQUAL);
-      }
+      // SIEMPRE inicializar con configuración vacía para nueva experiencia
+      // Los ítems se seleccionarán del menú del restaurante
+      setTotalAmount(0);
+      setItems([]);
+      setParticipants([]);
+      setSplitMode(SPLIT_MODES.BY_ITEMS); // Cambiar por defecto a división por ítems
       setErrors({});
       setShowPreview(false);
     }
@@ -102,16 +98,42 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
   };
 
   /**
-   * Agrega un nuevo ítem
+   * Agrega un nuevo ítem manualmente
    */
   const addItem = () => {
     const newItem = {
       id: Date.now(),
       name: '',
       price: 0,
-      category: 'General'
+      category: 'General',
+      fromMenu: false
     };
     setItems(prev => [...prev, newItem]);
+  };
+
+  /**
+   * Agrega un ítem desde el menú
+   */
+  const addItemFromMenu = async (menuItem) => {
+    // Agregar localmente primero para respuesta inmediata
+    setItems(prev => [...prev, menuItem]);
+
+    // Sincronizar con el servicio si la mesa está disponible
+    if (tableQR?.mesa_id) {
+      try {
+        await tableQRService.addItemToTableOrder(tableQR.mesa_id, menuItem);
+      } catch (error) {
+        console.error('Error syncing item addition:', error);
+        // El ítem ya está agregado localmente, no es necesario revertir
+      }
+    }
+  };
+
+  /**
+   * Abre el selector de menú
+   */
+  const openMenuSelector = () => {
+    setShowMenuSelector(true);
   };
 
   /**
@@ -126,14 +148,32 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
   /**
    * Elimina un ítem
    */
-  const removeItem = (index) => {
+  const removeItem = async (index) => {
+    // Remover localmente primero
+    const itemToRemove = items[index];
     setItems(prev => prev.filter((_, i) => i !== index));
-    // Eliminar el ítem de las selecciones de participantes
-    const itemId = items[index]?.id;
+
+    // Sincronizar con el servicio si la mesa está disponible
+    if (tableQR?.mesa_id) {
+      try {
+        await tableQRService.removeItemFromTableOrder(tableQR.mesa_id, index);
+      } catch (error) {
+        console.error('Error syncing item removal:', error);
+        // Revertir cambio local si hay error
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems.splice(index, 0, itemToRemove);
+          return newItems;
+        });
+      }
+    }
+
+    // Limpiar selecciones de participantes del ítem eliminado
+    const itemId = itemToRemove?.id;
     if (itemId) {
       setParticipants(prev => prev.map(participant => ({
         ...participant,
-        selectedItems: participant.selectedItems.filter(id => id !== itemId)
+        selectedItems: participant.selectedItems?.filter(id => id !== itemId) || []
       })));
     }
   };
@@ -179,33 +219,38 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
   };
 
   /**
-   * Maneja el guardado de la configuración
+   * Maneja el guardado de la cuenta de mesa
    */
   const handleSave = async () => {
-    const validation = validateConfiguration();
-
-    if (!validation.valid) {
-      setErrors({ general: validation.errors.join(', ') });
+    if (items.length === 0) {
+      setErrors({ general: 'Debe agregar al menos un producto a la cuenta' });
       return;
     }
 
     setLoading(true);
 
     try {
-      const paymentData = {
+      const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+
+      const tableOrderData = {
         totalAmount,
-        participants: splitMode === SPLIT_MODES.EQUAL
-          ? participants.map((p, i) => ({ ...p, amount: calculateSplit().perPerson }))
-          : calculateSplit().participants,
         items,
-        splitMode,
-        lastUpdated: new Date().toISOString()
+        status: 'ready_for_customers',
+        configuredAt: new Date().toISOString(),
+        splitMode: 'customer_assignment'
       };
 
-      await onSave(paymentData);
+      // Usar el nuevo servicio para configurar la cuenta de mesa
+      if (tableQR?.mesa_id) {
+        await tableQRService.configureTableOrder(tableQR.mesa_id, tableOrderData);
+      }
+
+      // También llamar al callback original para compatibilidad
+      await onSave(tableOrderData);
       onClose();
     } catch (error) {
-      setErrors({ general: 'Error al guardar la configuración' });
+      console.error('Error saving table order:', error);
+      setErrors({ general: 'Error al finalizar la cuenta de mesa' });
     } finally {
       setLoading(false);
     }
@@ -308,16 +353,13 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                 {participants.length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/50">
                     <Users className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-                    <p className="text-slate-800 font-semibold mb-1">Configura tu cuenta para esta mesa</p>
-                    <p className="text-sm text-slate-600 mb-4">Agrega participantes para comenzar a dividir la cuenta</p>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={addParticipant}
-                      icon={Plus}
-                    >
-                      Agregar primer participante
-                    </Button>
+                    <p className="text-slate-800 font-semibold mb-1">Mesa {tableQR?.mesa_numero} - Sin comensales configurados</p>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Primero agregue productos del menú, luego configure los participantes si es necesario
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Los comensales podrán asignar productos cuando escaneen el QR individualmente
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -353,38 +395,59 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                 )}
               </div>
 
-              {/* Ítems (solo en modo por ítems) */}
-              {splitMode === SPLIT_MODES.BY_ITEMS && (
-                <div className="glass-card-sm p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4" />
-                      Ítems de la Cuenta ({items.length})
-                    </h3>
+              {/* Ítems de la cuenta de mesa */}
+              <div className="glass-card-sm p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Cuenta de Mesa {tableQR?.mesa_numero} ({items.length} productos)
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openMenuSelector}
+                      icon={Plus}
+                    >
+                      Del Menú
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={addItem}
                       icon={Plus}
                     >
-                      Agregar
+                      Manual
                     </Button>
                   </div>
+                </div>
 
-                  {items.length === 0 ? (
-                    <div className="text-center py-8 border-2 border-dashed border-emerald-300 rounded-lg bg-emerald-50/50">
-                      <ShoppingCart className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
-                      <p className="text-slate-800 font-semibold mb-1">No hay productos en la cuenta</p>
-                      <p className="text-sm text-slate-600 mb-4">Agrega productos para comenzar</p>
+                {items.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-emerald-300 rounded-lg bg-emerald-50/50">
+                    <ShoppingCart className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
+                    <p className="text-slate-800 font-semibold mb-1">La cuenta de la mesa está vacía</p>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Seleccione productos del menú o agréguelos manualmente
+                    </p>
+                    <div className="flex gap-2 justify-center">
                       <Button
                         variant="primary"
+                        size="sm"
+                        onClick={openMenuSelector}
+                        icon={Plus}
+                      >
+                        Seleccionar del Menú
+                      </Button>
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={addItem}
                         icon={Plus}
                       >
-                        Agregar primer producto
+                        Agregar Manual
                       </Button>
                     </div>
+                  </div>
                   ) : (
                     <div className="space-y-3 max-h-60 overflow-y-auto">
                       {items.map((item, index) => (
@@ -420,21 +483,12 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                           </button>
                         </div>
 
-                        {/* Selección por participante */}
-                        <div className="flex flex-wrap gap-2">
-                          {participants.map((participant, pIndex) => (
-                            <button
-                              key={participant.id}
-                              onClick={() => toggleItemSelection(pIndex, item.id)}
-                              className={`px-2 py-1 rounded text-xs transition-colors ${
-                                participant.selectedItems.includes(item.id)
-                                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                              }`}
-                            >
-                              {participant.name || `Persona ${pIndex + 1}`}
-                            </button>
-                          ))}
+                        {/* Información del producto para la mesa */}
+                        <div className="flex items-center justify-between text-sm text-slate-600 mt-2">
+                          <span>Agregado a la cuenta de mesa</span>
+                          <span className="font-medium text-emerald-600">
+                            {item.price}€
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -465,62 +519,40 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
               )}
             </div>
 
-            {/* Vista previa */}
+            {/* Resumen de la cuenta */}
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Calculator className="w-4 h-4" />
-                Vista Previa del Cálculo
+                Resumen de Cuenta - Mesa {tableQR?.mesa_numero}
               </h3>
 
-              {showPreview && splitResult && (
-                <div className="glass-card-sm p-4 space-y-4">
-                  {splitMode === SPLIT_MODES.EQUAL ? (
-                    <div>
-                      <h4 className="font-medium text-slate-900 mb-3">División Igualitaria</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">{formatCurrency(totalAmount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Por persona:</span>
-                          <span className="font-medium text-blue-600">
-                            {formatCurrency(splitResult.perPerson)}
-                          </span>
-                        </div>
-                        {splitResult.remainder > 0 && (
-                          <div className="flex justify-between text-amber-600">
-                            <span>Restante:</span>
-                            <span>{formatCurrency(splitResult.remainder)}</span>
-                          </div>
-                        )}
-                      </div>
+              <div className="glass-card-sm p-4 space-y-4">
+                <div>
+                  <h4 className="font-medium text-slate-900 mb-3">Total de la Mesa</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Productos ({items.length}):</span>
+                      <span className="font-medium">
+                        {items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0).toFixed(2)}€
+                      </span>
                     </div>
-                  ) : (
-                    <div>
-                      <h4 className="font-medium text-slate-900 mb-3">División por Ítems</h4>
-                      <div className="space-y-2">
-                        {splitResult.participants?.map((participant, index) => (
-                          <div key={participant.id} className="flex justify-between text-sm">
-                            <span className="truncate">{participant.name || `Persona ${index + 1}`}</span>
-                            <span className="font-medium text-blue-600 ml-2">
-                              {formatCurrency(participant.amount)}
-                            </span>
-                          </div>
-                        ))}
-                        {splitResult.unassignedAmount > 0 && (
-                          <div className="pt-2 border-t border-amber-200">
-                            <div className="flex justify-between text-amber-600 text-sm">
-                              <span>Sin asignar:</span>
-                              <span>{formatCurrency(splitResult.unassignedAmount)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex justify-between border-t border-slate-200 pt-2">
+                      <span className="font-medium">Total Mesa:</span>
+                      <span className="font-bold text-lg text-emerald-600">
+                        {items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0).toFixed(2)}€
+                      </span>
+                    </div>
+                  </div>
+
+                  {items.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Próximo paso:</strong> Los comensales escanearán el QR para seleccionar sus productos y realizar el pago individual.
+                      </p>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
               {/* Estado de validación */}
               <div className={`p-3 rounded-lg border ${
@@ -552,14 +584,22 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
             <Button
               onClick={handleSave}
               loading={loading}
-              disabled={!validation.valid}
+              disabled={items.length === 0}
               icon={Save}
             >
-              Guardar Configuración
+              Finalizar Cuenta de Mesa
             </Button>
           </div>
         </div>
       </div>
+
+      {/* MenuSelector Modal */}
+      <MenuSelector
+        isOpen={showMenuSelector}
+        onClose={() => setShowMenuSelector(false)}
+        onAddItem={addItemFromMenu}
+        tableNumber={tableQR?.mesa_numero}
+      />
     </Modal>
   );
 };

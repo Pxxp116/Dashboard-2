@@ -27,6 +27,7 @@ import Input from '../ui/Input';
 import TableQRCard from './TableQRCard';
 import PaymentSplitModal from './PaymentSplitModal';
 import PaymentStatusModal from './PaymentStatusModal';
+import WaiterInterface from './WaiterInterface';
 import tableQRService from '../../services/tableQRService';
 import { useAppContext } from '../../context/AppContext';
 import {
@@ -50,7 +51,7 @@ const TableQRTab = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('mesa_numero');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list' | 'waiter'
   const [loading, setLoading] = useState(false);
 
   // Modales
@@ -190,6 +191,21 @@ const TableQRTab = () => {
       ));
     } catch (error) {
       console.error('Error saving split configuration:', error);
+    }
+  };
+
+  /**
+   * Maneja la actualización de cuenta de mesa desde la interfaz de camarero
+   */
+  const handleTableOrderUpdate = async (mesaId, orderData) => {
+    try {
+      const updatedQR = await tableQRService.configureTableOrder(mesaId, orderData);
+
+      setTableQRs(prev => prev.map(qr =>
+        qr.mesa_id === mesaId ? updatedQR : qr
+      ));
+    } catch (error) {
+      console.error('Error updating table order:', error);
     }
   };
 
@@ -428,18 +444,31 @@ const TableQRTab = () => {
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              title="Vista de tarjetas"
             >
               <Grid className="w-4 h-4 mx-auto" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`flex-1 px-3 py-2 rounded-r-lg transition-colors ${
+              className={`flex-1 px-3 py-2 transition-colors ${
                 viewMode === 'list'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              title="Vista de lista"
             >
               <List className="w-4 h-4 mx-auto" />
+            </button>
+            <button
+              onClick={() => setViewMode('waiter')}
+              className={`flex-1 px-3 py-2 rounded-r-lg transition-colors ${
+                viewMode === 'waiter'
+                  ? 'bg-emerald-50 text-emerald-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+              title="Vista de camarero"
+            >
+              <Users className="w-4 h-4 mx-auto" />
             </button>
           </div>
 
@@ -483,7 +512,7 @@ const TableQRTab = () => {
           )}
         </div>
 
-        {/* Grid/Lista de QRs */}
+        {/* Grid/Lista/Vista de Camarero */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -493,22 +522,35 @@ const TableQRTab = () => {
             ))}
           </div>
         ) : filteredQRs.length > 0 ? (
-          <div className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-              : 'space-y-4'
-          }>
-            {filteredQRs.map((tableQR) => (
-              <TableQRCard
-                key={tableQR.id}
-                tableQR={tableQR}
-                onViewPayment={handleViewPayment}
-                onConfigureSplit={handleConfigureSplit}
-                onRegenerate={handleRegenerateQR}
-                onDelete={handleDeleteQR}
-              />
-            ))}
-          </div>
+          viewMode === 'waiter' ? (
+            <div className="space-y-6">
+              {filteredQRs.map((tableQR) => (
+                <WaiterInterface
+                  key={tableQR.id}
+                  tableQR={tableQR}
+                  onTableOrderUpdate={handleTableOrderUpdate}
+                  onRefresh={loadTableQRs}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'space-y-4'
+            }>
+              {filteredQRs.map((tableQR) => (
+                <TableQRCard
+                  key={tableQR.id}
+                  tableQR={tableQR}
+                  onViewPayment={handleViewPayment}
+                  onConfigureSplit={handleConfigureSplit}
+                  onRegenerate={handleRegenerateQR}
+                  onDelete={handleDeleteQR}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className="glass-card p-12 text-center">
             <QrCode className="w-12 h-12 text-slate-400 mx-auto mb-4" />
