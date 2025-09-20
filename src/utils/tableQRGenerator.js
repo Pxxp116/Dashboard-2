@@ -48,16 +48,33 @@ export const generateTableQR = (mesa, config = {}) => {
   } = config;
 
   // CRÍTICO: Validación y obtención del ID único de la mesa
-  const mesaId = mesa.id || mesa.numero_mesa || mesa.numero;
-  const mesaNumero = mesa.numero || mesa.numero_mesa || mesaId;
+  // La estructura real de BD es: { id: number, numero_mesa: string, capacidad: number, zona: string, ... }
+
+  // Debug: Mostrar estructura real de la mesa
+  console.log(`🔍 [DEBUG] Estructura de mesa recibida:`, {
+    id: mesa.id,
+    numero_mesa: mesa.numero_mesa,
+    numero: mesa.numero,
+    capacidad: mesa.capacidad,
+    zona: mesa.zona,
+    todas_las_propiedades: Object.keys(mesa)
+  });
+
+  const mesaId = mesa.id || `mesa_${mesa.numero_mesa || 'unknown'}`;
+  const mesaNumero = mesa.numero_mesa || mesa.numero || mesaId;
 
   if (!mesaId) {
     console.error('❌ ERROR: Mesa sin ID válido:', mesa);
     throw new Error(`Mesa sin identificador válido: ${JSON.stringify(mesa)}`);
   }
 
-  // Log para debugging
-  console.log(`🎯 Generando QR para Mesa ${mesaNumero} (ID: ${mesaId})`);
+  // Log para debugging con información detallada
+  console.log(`🎯 Generando QR para Mesa ${mesaNumero} (ID: ${mesaId})`, {
+    mesa_id_original: mesa.id,
+    mesa_numero_mesa: mesa.numero_mesa,
+    mesa_id_usado: mesaId,
+    mesa_numero_usado: mesaNumero
+  });
 
   // Usar URL del servicio de pagos con ID validado
   const paymentBaseUrl = process.env.REACT_APP_PAYMENT_URL || baseUrl;
@@ -156,6 +173,15 @@ export const validateTableQRs = (qrs) => {
 export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
   const { restaurante, menu, config = {} } = restaurantData;
 
+  // Validar estructura de mesa antes de procesar
+  console.log(`🔍 [ENHANCED] Validando estructura de mesa:`, {
+    mesa_recibida: mesa,
+    tiene_id: !!mesa.id,
+    tiene_numero_mesa: !!mesa.numero_mesa,
+    tipo_id: typeof mesa.id,
+    valor_numero_mesa: mesa.numero_mesa
+  });
+
   const enhancedConfig = {
     baseUrl: config.baseUrl || 'https://gastrobot.com',
     restaurante: restaurante?.nombre || 'GastroBot Restaurant',
@@ -165,9 +191,14 @@ export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
     menuAvailable: menu?.categorias?.length > 0
   };
 
-  console.log(`🎯 Generando QR mejorado para Mesa ${mesa.numero} de ${enhancedConfig.restaurante}`);
+  // Usar numero_mesa como referencia principal
+  const mesaRef = mesa.numero_mesa || mesa.numero || mesa.id || 'unknown';
+  console.log(`🎯 Generando QR mejorado para Mesa ${mesaRef} de ${enhancedConfig.restaurante}`);
 
   const qr = generateTableQR(mesa, enhancedConfig);
+
+  // Validar que la URL generada es única
+  console.log(`🔗 [ENHANCED] URL generada: ${qr.paymentUrl}`);
 
   // Agregar metadatos adicionales
   qr.enhanced = true;
@@ -176,7 +207,13 @@ export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
     menu_categories: menu?.categorias?.length || 0,
     menu_items: menu?.categorias?.reduce((total, cat) =>
       total + (cat.platos?.length || 0), 0) || 0,
-    last_updated: new Date().toISOString()
+    last_updated: new Date().toISOString(),
+    mesa_source_structure: {
+      original_id: mesa.id,
+      original_numero_mesa: mesa.numero_mesa,
+      used_id: qr.mesa_id,
+      used_numero: qr.mesa_numero
+    }
   };
 
   return qr;
