@@ -35,8 +35,10 @@ import {
   generateTableQR,
   calculateTablePaymentStats,
   exportPaymentDataToCSV,
-  formatCurrency
+  formatCurrency,
+  validateTableQRs
 } from '../../utils/tableQRGenerator';
+import { debugQRGeneration, validateMesaData } from '../../utils/qrDebugger';
 
 /**
  * Tab principal de QR por mesa
@@ -95,11 +97,65 @@ const TableQRTab = () => {
    */
   const generateQRsForAllTables = async () => {
     setLoading(true);
+
     try {
-      const qrs = await tableQRService.createMultipleTableQRs(mesas);
+      console.log('🚀 Iniciando generación de QRs para todas las mesas');
+
+      // Validar datos de mesas antes de procesar
+      if (!validateMesaData(mesas)) {
+        console.warn('⚠️ Problemas detectados en los datos de las mesas');
+      }
+
+      // Normalizar mesas asegurando IDs únicos
+      const mesasNormalizadas = mesas.map((mesa, index) => {
+        const mesaId = mesa.id || mesa.numero_mesa || mesa.numero || `temp_${index + 1}`;
+        const mesaNumero = mesa.numero || mesa.numero_mesa || mesaId;
+
+        console.log(`Procesando mesa ${index + 1}: ID=${mesaId}, Número=${mesaNumero}`);
+
+        return {
+          ...mesa,
+          id: mesaId,
+          numero: mesaNumero,
+          numero_mesa: mesaNumero,
+          capacidad: mesa.capacidad || 4
+        };
+      });
+
+      // Verificar IDs duplicados
+      const ids = mesasNormalizadas.map(m => m.id);
+      const idsUnicos = [...new Set(ids)];
+
+      if (ids.length !== idsUnicos.length) {
+        console.error('❌ ERROR CRÍTICO: IDs duplicados detectados');
+        const duplicados = ids.filter((id, index) => ids.indexOf(id) !== index);
+        console.error('IDs duplicados:', [...new Set(duplicados)]);
+
+        // Mostrar alerta al usuario
+        alert('Error: Se detectaron mesas con IDs duplicados. Por favor, revisa la configuración de las mesas.');
+        setLoading(false);
+        return;
+      }
+
+      console.log(`✅ ${mesasNormalizadas.length} mesas listas para generar QR`);
+
+      // Generar QRs
+      const qrs = await tableQRService.createMultipleTableQRs(mesasNormalizadas);
+
+      // Debug y validación
+      debugQRGeneration(mesasNormalizadas, qrs);
+
+      if (!validateTableQRs(qrs)) {
+        alert('Advertencia: Se detectaron posibles problemas con los QR generados. Revisa la consola para más detalles.');
+      }
+
       setTableQRs(qrs);
+
+      console.log(`✅ ${qrs.length} QRs generados exitosamente`);
+
     } catch (error) {
-      console.error('Error generating table QRs:', error);
+      console.error('❌ Error generando QRs:', error);
+      alert(`Error al generar QRs: ${error.message}`);
     } finally {
       setLoading(false);
     }

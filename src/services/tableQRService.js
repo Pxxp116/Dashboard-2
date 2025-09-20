@@ -118,7 +118,29 @@ class TableQRService {
    */
   async createMultipleTableQRs(mesas, config = {}) {
     try {
-      const qrsData = generateMultipleTableQRs(mesas, config);
+      console.log(`📤 Creando QRs para ${mesas.length} mesas`);
+
+      // Validar mesas antes de generar
+      const mesasValidas = mesas.filter(mesa => {
+        const mesaId = mesa.id || mesa.numero_mesa || mesa.numero;
+        if (!mesaId) {
+          console.warn('Mesa sin ID válido, omitiendo:', mesa);
+          return false;
+        }
+        return true;
+      });
+
+      if (mesasValidas.length !== mesas.length) {
+        console.warn(`⚠️ ${mesas.length - mesasValidas.length} mesas omitidas por falta de ID`);
+      }
+
+      const qrsData = generateMultipleTableQRs(mesasValidas, config);
+
+      // Log para debugging
+      console.log('QRs generados localmente:');
+      qrsData.forEach(qr => {
+        console.log(`  - Mesa ${qr.mesa_numero}: ${qr.paymentUrl}`);
+      });
 
       const response = await fetch(`${API_BASE_URL}/table-qr/batch`, {
         method: 'POST',
@@ -130,6 +152,9 @@ class TableQRService {
 
       const createdQRs = await response.json();
 
+      // Validar respuesta del servidor
+      console.log(`📥 Servidor devolvió ${createdQRs.length} QRs`);
+
       // Actualizar cache
       createdQRs.forEach(qr => this.tableQRs.set(qr.mesa_id, qr));
 
@@ -137,9 +162,12 @@ class TableQRService {
       this.notifyListeners('qrs_created', createdQRs);
 
       return createdQRs;
+
     } catch (error) {
-      console.error('Error creating multiple table QRs:', error);
+      console.error('❌ Error creating multiple table QRs:', error);
+
       // En caso de error, devolver QRs generados localmente
+      console.log('⚠️ Usando QRs generados localmente como fallback');
       const localQRs = generateMultipleTableQRs(mesas, config);
       localQRs.forEach(qr => this.tableQRs.set(qr.mesa_id, qr));
       return localQRs;

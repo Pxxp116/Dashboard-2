@@ -45,16 +45,28 @@ export const generateTableQR = (mesa, config = {}) => {
     paymentMethods = ['card', 'cash', 'bizum']
   } = config;
 
-  // ACTUALIZADO: Usar URL del servicio de pagos independiente
-  // En Railway: https://${{ gastrobot-payment.RAILWAY_PUBLIC_DOMAIN }}
-  // En desarrollo: http://localhost:3002
+  // CRÍTICO: Validación y obtención del ID único de la mesa
+  const mesaId = mesa.id || mesa.numero_mesa || mesa.numero;
+  const mesaNumero = mesa.numero || mesa.numero_mesa || mesaId;
+
+  if (!mesaId) {
+    console.error('❌ ERROR: Mesa sin ID válido:', mesa);
+    throw new Error(`Mesa sin identificador válido: ${JSON.stringify(mesa)}`);
+  }
+
+  // Log para debugging
+  console.log(`🎯 Generando QR para Mesa ${mesaNumero} (ID: ${mesaId})`);
+
+  // Usar URL del servicio de pagos con ID validado
   const paymentBaseUrl = process.env.REACT_APP_PAYMENT_URL || baseUrl;
-  const tablePaymentUrl = `${paymentBaseUrl}/mesa/${mesa.id}/pago`;
+  const tablePaymentUrl = `${paymentBaseUrl}/mesa/${mesaId}/pago`;
+
+  console.log(`   URL generada: ${tablePaymentUrl}`);
 
   const qrData = {
     type: 'table_payment',
-    mesa_id: mesa.id,
-    mesa_numero: mesa.numero,
+    mesa_id: mesaId,
+    mesa_numero: mesaNumero,
     restaurante,
     url: tablePaymentUrl,
     split_enabled: enableSplitPayment,
@@ -64,10 +76,10 @@ export const generateTableQR = (mesa, config = {}) => {
 
   return {
     id: generateQRId(),
-    mesa_id: mesa.id,
-    mesa_numero: mesa.numero,
-    name: `Mesa ${mesa.numero} - Pago`,
-    description: `Código QR para pagos en Mesa ${mesa.numero} - ${mesa.capacidad} personas`,
+    mesa_id: mesaId,
+    mesa_numero: mesaNumero,
+    name: `Mesa ${mesaNumero} - Pago`,
+    description: `Código QR para pagos en Mesa ${mesaNumero} - ${mesa.capacidad || 4} personas`,
     type: 'table_payment',
     data: JSON.stringify(qrData),
     url: generateQRUrl(tablePaymentUrl),
@@ -95,6 +107,22 @@ export const generateTableQR = (mesa, config = {}) => {
  */
 export const generateMultipleTableQRs = (mesas, config = {}) => {
   return mesas.map(mesa => generateTableQR(mesa, config));
+};
+
+// Añadir función de validación después de generateMultipleTableQRs
+export const validateTableQRs = (qrs) => {
+  const urls = qrs.map(qr => qr.paymentUrl);
+  const uniqueUrls = [...new Set(urls)];
+
+  if (urls.length !== uniqueUrls.length) {
+    console.error('❌ ADVERTENCIA: Se detectaron URLs duplicadas en los QR');
+    const duplicates = urls.filter((url, index) => urls.indexOf(url) !== index);
+    console.error('URLs duplicadas:', duplicates);
+    return false;
+  }
+
+  console.log('✅ Validación exitosa: Todos los QR tienen URLs únicas');
+  return true;
 };
 
 /**
