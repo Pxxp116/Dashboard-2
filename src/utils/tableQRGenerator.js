@@ -47,7 +47,7 @@ export const generateTableQR = (mesa, config = {}) => {
     menuAvailable = false // Indica si hay menú disponible
   } = config;
 
-  // CRÍTICO: Validación y obtención del ID único de la mesa
+  // CRÍTICO: Validación estricta del ID único de la mesa
   // La estructura real de BD es: { id: number, numero_mesa: string, capacidad: number, zona: string, ... }
 
   // Debug: Mostrar estructura real de la mesa
@@ -60,12 +60,22 @@ export const generateTableQR = (mesa, config = {}) => {
     todas_las_propiedades: Object.keys(mesa)
   });
 
-  const mesaId = mesa.id || `mesa_${mesa.numero_mesa || 'unknown'}`;
+  // ELIMINADO: Fallback problemático que generaba IDs duplicados
+  // ANTERIOR: const mesaId = mesa.id || `mesa_${mesa.numero_mesa || 'unknown'}`;
+
+  // NUEVO: Validación estricta - la mesa DEBE tener un ID único válido
+  if (!mesa.id) {
+    console.error('❌ ERROR CRÍTICO: Mesa sin ID válido:', mesa);
+    throw new Error(`Mesa ${mesa.numero_mesa || 'desconocida'} no tiene ID válido de base de datos. Todas las mesas deben tener un ID único.`);
+  }
+
+  const mesaId = mesa.id;
   const mesaNumero = mesa.numero_mesa || mesa.numero || mesaId;
 
-  if (!mesaId) {
-    console.error('❌ ERROR: Mesa sin ID válido:', mesa);
-    throw new Error(`Mesa sin identificador válido: ${JSON.stringify(mesa)}`);
+  // Validación adicional del tipo de ID
+  if (typeof mesaId !== 'number' && typeof mesaId !== 'string') {
+    console.error('❌ ERROR: ID de mesa tiene tipo inválido:', typeof mesaId, mesaId);
+    throw new Error(`Mesa ${mesaNumero}: ID debe ser número o string, recibido: ${typeof mesaId}`);
   }
 
   // Log para debugging con información detallada
@@ -73,14 +83,23 @@ export const generateTableQR = (mesa, config = {}) => {
     mesa_id_original: mesa.id,
     mesa_numero_mesa: mesa.numero_mesa,
     mesa_id_usado: mesaId,
-    mesa_numero_usado: mesaNumero
+    mesa_numero_usado: mesaNumero,
+    tipo_id: typeof mesaId,
+    id_es_unico: true // Se asume único al pasar validación
   });
 
   // Usar URL del servicio de pagos con ID validado
   const paymentBaseUrl = process.env.REACT_APP_PAYMENT_URL || baseUrl;
   const tablePaymentUrl = `${paymentBaseUrl}/mesa/${mesaId}/pago`;
 
-  console.log(`   URL generada: ${tablePaymentUrl}`);
+  // Validar formato de URL generada
+  const urlPattern = /\/mesa\/[^\/]+\/pago$/;
+  if (!urlPattern.test(tablePaymentUrl)) {
+    console.error('❌ ERROR: URL generada tiene formato inválido:', tablePaymentUrl);
+    throw new Error(`URL generada para Mesa ${mesaNumero} tiene formato inválido: ${tablePaymentUrl}`);
+  }
+
+  console.log(`✅ URL única generada para Mesa ${mesaNumero}: ${tablePaymentUrl}`);
 
   const qrData = {
     type: 'table_payment',
@@ -148,19 +167,68 @@ export const generateMultipleTableQRs = (mesas, config = {}) => {
   return mesas.map(mesa => generateTableQR(mesa, config));
 };
 
-// Añadir función de validación después de generateMultipleTableQRs
+// Validación estricta de QRs generados
 export const validateTableQRs = (qrs) => {
-  const urls = qrs.map(qr => qr.paymentUrl);
-  const uniqueUrls = [...new Set(urls)];
+  console.group('🔍 VALIDACIÓN ESTRICTA DE QRs GENERADOS');
 
+  const urls = qrs.map(qr => qr.paymentUrl);
+  const mesaIds = qrs.map(qr => qr.mesa_id);
+  const uniqueUrls = [...new Set(urls)];
+  const uniqueMesaIds = [...new Set(mesaIds)];
+
+  // Validación 1: URLs únicas
+  console.log(`📊 URLs: ${urls.length} generadas, ${uniqueUrls.length} únicas`);
   if (urls.length !== uniqueUrls.length) {
-    console.error('❌ ADVERTENCIA: Se detectaron URLs duplicadas en los QR');
-    const duplicates = urls.filter((url, index) => urls.indexOf(url) !== index);
-    console.error('URLs duplicadas:', duplicates);
+    console.error('❌ ERROR CRÍTICO: URLs duplicadas detectadas');
+
+    // Encontrar y reportar duplicados específicos
+    const urlCount = {};
+    urls.forEach((url, index) => {
+      if (!urlCount[url]) urlCount[url] = [];
+      urlCount[url].push({ index, mesa_id: qrs[index].mesa_id, mesa_numero: qrs[index].mesa_numero });
+    });
+
+    Object.entries(urlCount)
+      .filter(([url, ocurrencias]) => ocurrencias.length > 1)
+      .forEach(([url, ocurrencias]) => {
+        console.error(`   🔴 URL duplicada: ${url}`);
+        console.error(`   📋 Mesas afectadas:`, ocurrencias.map(o => `Mesa ${o.mesa_numero} (ID: ${o.mesa_id})`));
+      });
+
+    console.groupEnd();
     return false;
   }
 
-  console.log('✅ Validación exitosa: Todos los QR tienen URLs únicas');
+  // Validación 2: Mesa IDs únicos
+  console.log(`📊 Mesa IDs: ${mesaIds.length} generados, ${uniqueMesaIds.length} únicos`);
+  if (mesaIds.length !== uniqueMesaIds.length) {
+    console.error('❌ ERROR CRÍTICO: Mesa IDs duplicados detectados');
+    const duplicateMesaIds = mesaIds.filter((id, index) => mesaIds.indexOf(id) !== index);
+    console.error('Mesa IDs duplicados:', [...new Set(duplicateMesaIds)]);
+    console.groupEnd();
+    return false;
+  }
+
+  // Validación 3: Formato de URLs
+  const invalidUrls = urls.filter(url => !/\/mesa\/[^\/]+\/pago$/.test(url));
+  if (invalidUrls.length > 0) {
+    console.error('❌ ERROR: URLs con formato inválido detectadas:', invalidUrls);
+    console.groupEnd();
+    return false;
+  }
+
+  // Validación 4: Verificar que mesa_id esté en la URL
+  const missingMesaIdInUrl = qrs.filter(qr => !qr.paymentUrl.includes(qr.mesa_id));
+  if (missingMesaIdInUrl.length > 0) {
+    console.error('❌ ERROR: URLs que no contienen el mesa_id correspondiente:',
+      missingMesaIdInUrl.map(qr => ({ mesa_id: qr.mesa_id, url: qr.paymentUrl })));
+    console.groupEnd();
+    return false;
+  }
+
+  console.log('✅ VALIDACIÓN COMPLETA: Todos los QR son válidos y únicos');
+  console.log(`✅ ${qrs.length} QRs generados correctamente con URLs únicas`);
+  console.groupEnd();
   return true;
 };
 
@@ -173,7 +241,7 @@ export const validateTableQRs = (qrs) => {
 export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
   const { restaurante, menu, config = {} } = restaurantData;
 
-  // Validar estructura de mesa antes de procesar
+  // Validación estricta de mesa antes de procesar
   console.log(`🔍 [ENHANCED] Validando estructura de mesa:`, {
     mesa_recibida: mesa,
     tiene_id: !!mesa.id,
@@ -181,6 +249,17 @@ export const generateEnhancedTableQR = (mesa, restaurantData = {}) => {
     tipo_id: typeof mesa.id,
     valor_numero_mesa: mesa.numero_mesa
   });
+
+  // Aplicar la misma validación estricta que en generateTableQR
+  if (!mesa.id) {
+    console.error('❌ ERROR CRÍTICO en Enhanced QR: Mesa sin ID válido:', mesa);
+    throw new Error(`Enhanced QR: Mesa ${mesa.numero_mesa || 'desconocida'} no tiene ID válido de base de datos`);
+  }
+
+  if (typeof mesa.id !== 'number' && typeof mesa.id !== 'string') {
+    console.error('❌ ERROR en Enhanced QR: ID de mesa tiene tipo inválido:', typeof mesa.id, mesa.id);
+    throw new Error(`Enhanced QR: Mesa ${mesa.numero_mesa}: ID debe ser número o string, recibido: ${typeof mesa.id}`);
+  }
 
   const enhancedConfig = {
     baseUrl: config.baseUrl || 'https://gastrobot.com',

@@ -40,7 +40,7 @@ import {
   formatCurrency,
   validateTableQRs
 } from '../../utils/tableQRGenerator';
-import { debugQRGeneration, validateMesaData } from '../../utils/qrDebugger';
+import { debugQRGeneration, validateMesaData, validateQRPostGeneration, quickQRDiagnostic } from '../../utils/qrDebugger';
 import { runCompleteQRDiagnostic, quickDiagnostic } from '../../utils/qrDiagnostic';
 import restaurantDataService from '../../services/restaurantDataService';
 
@@ -105,9 +105,23 @@ const TableQRTab = () => {
     try {
       console.log('🚀 Iniciando generación de QRs mejorados para todas las mesas');
 
-      // Validar datos de mesas antes de procesar
-      if (!validateMesaData(mesas)) {
-        console.warn('⚠️ Problemas detectados en los datos de las mesas');
+      // Validar datos de mesas antes de procesar usando función mejorada
+      const mesaValidation = validateMesaData(mesas);
+      if (!mesaValidation.valid) {
+        console.error('❌ Problemas críticos detectados en los datos de las mesas:', mesaValidation.issues);
+        alert(`ERROR CRÍTICO: Problemas en los datos de las mesas:
+
+${mesaValidation.issues.join('\n')}
+
+${mesaValidation.warnings.length > 0 ? '\nAdvertencias:\n' + mesaValidation.warnings.join('\n') : ''}
+
+No se pueden generar QRs hasta resolver estos problemas.`);
+        setLoading(false);
+        return;
+      }
+
+      if (mesaValidation.warnings.length > 0) {
+        console.warn('⚠️ Advertencias en datos de mesas:', mesaValidation.warnings);
       }
 
       // ANÁLISIS DETALLADO: Estructura real de las mesas recibidas
@@ -121,11 +135,41 @@ const TableQRTab = () => {
         }, {}) : {}
       });
 
-      // Normalizar mesas asegurando IDs únicos y respetando estructura BD
+      // NUEVA VALIDACIÓN ESTRICTA: Verificar que todas las mesas tienen IDs únicos válidos ANTES de normalizar
+      console.log('🔒 VALIDACIÓN ESTRICTA PRE-GENERACIÓN - Verificando IDs únicos');
+
+      const idsExtraidos = mesas.map((mesa, index) => {
+        if (!mesa.id) {
+          console.error(`❌ ERROR CRÍTICO: Mesa en posición ${index} sin ID de base de datos:`, mesa);
+          throw new Error(`PARADA CRÍTICA: Mesa en posición ${index} (número: ${mesa.numero_mesa || 'desconocido'}) no tiene ID válido de base de datos. Todas las mesas deben tener un ID único.`);
+        }
+        return mesa.id;
+      });
+
+      // Verificar IDs únicos ANTES de cualquier procesamiento
+      const idsUnicos = [...new Set(idsExtraidos)];
+      if (idsExtraidos.length !== idsUnicos.length) {
+        console.error('❌ ERROR CRÍTICO: IDs DUPLICADOS detectados en base de datos');
+
+        // Análisis detallado de duplicados
+        const idCount = {};
+        idsExtraidos.forEach((id, index) => {
+          if (!idCount[id]) idCount[id] = [];
+          idCount[id].push({ index, mesa: mesas[index] });
+        });
+
+        const duplicados = Object.entries(idCount).filter(([id, ocurrencias]) => ocurrencias.length > 1);
+        console.error('🚨 IDs duplicados encontrados:', duplicados);
+
+        throw new Error(`PARADA CRÍTICA: Se detectaron IDs duplicados en la base de datos: ${duplicados.map(([id]) => id).join(', ')}. Esto debe corregirse antes de generar QRs.`);
+      }
+
+      console.log(`✅ PRE-VALIDACIÓN EXITOSA: ${idsExtraidos.length} mesas con IDs únicos validados`);
+
+      // Normalizar mesas respetando estructura BD (ahora que sabemos que los IDs son únicos)
       const mesasNormalizadas = mesas.map((mesa, index) => {
-        // La estructura real de BD: { id: number, numero_mesa: string, capacidad: number, zona: string, activa: boolean, ... }
-        const mesaId = mesa.id; // ID siempre debe existir en BD
-        const mesaNumero = mesa.numero_mesa; // numero_mesa es el campo real de BD
+        const mesaId = mesa.id; // Sabemos que existe por validación previa
+        const mesaNumero = mesa.numero_mesa;
 
         console.log(`🔍 Procesando mesa ${index + 1}:`, {
           mesa_original: mesa,
@@ -137,67 +181,23 @@ const TableQRTab = () => {
           valor_numero_mesa: mesaNumero
         });
 
-        // Validación estricta
-        if (!mesaId) {
-          console.error(`❌ Mesa sin ID en posición ${index}:`, mesa);
-          throw new Error(`Mesa en posición ${index} no tiene ID válido de BD`);
-        }
-
+        // Validación adicional del número de mesa
         if (!mesaNumero) {
           console.error(`❌ Mesa sin numero_mesa en posición ${index}:`, mesa);
-          throw new Error(`Mesa en posición ${index} no tiene numero_mesa válido de BD`);
+          throw new Error(`Mesa en posición ${index} (ID: ${mesaId}) no tiene numero_mesa válido de BD`);
         }
 
         return {
           ...mesa, // Mantener toda la estructura original de BD
-          id: mesaId, // Asegurar que ID existe
+          id: mesaId, // ID garantizado único
           numero_mesa: mesaNumero, // Mantener numero_mesa original
           numero: mesaNumero, // Compatibilidad hacia atrás
           capacidad: mesa.capacidad || 4
         };
       });
 
-      // Verificar IDs duplicados con análisis detallado
-      const ids = mesasNormalizadas.map(m => m.id);
-      const numeross = mesasNormalizadas.map(m => m.numero_mesa);
-      const idsUnicos = [...new Set(ids)];
-      const numerosUnicos = [...new Set(numeross)];
-
-      console.log(`🔍 [VALIDACIÓN] Análisis de unicidad:`, {
-        total_mesas: mesasNormalizadas.length,
-        ids_array: ids,
-        ids_unicos: idsUnicos,
-        numeros_mesa_array: numeross,
-        numeros_unicos: numerosUnicos,
-        hay_ids_duplicados: ids.length !== idsUnicos.length,
-        hay_numeros_duplicados: numeross.length !== numerosUnicos.length
-      });
-
-      if (ids.length !== idsUnicos.length) {
-        console.error('❌ ERROR CRÍTICO: IDs duplicados detectados en base de datos');
-
-        // Análisis detallado de duplicados
-        const duplicadosDetalle = {};
-        ids.forEach((id, index) => {
-          if (!duplicadosDetalle[id]) duplicadosDetalle[id] = [];
-          duplicadosDetalle[id].push({
-            index,
-            mesa: mesasNormalizadas[index],
-            numero_mesa: mesasNormalizadas[index].numero_mesa
-          });
-        });
-
-        const duplicados = Object.entries(duplicadosDetalle)
-          .filter(([id, ocurrencias]) => ocurrencias.length > 1);
-
-        console.error('📊 Análisis detallado de duplicados:', duplicados);
-
-        alert(`Error crítico: Se detectaron IDs duplicados en la base de datos.
-        Esto indica un problema de integridad de datos.
-        IDs duplicados: ${duplicados.map(([id]) => id).join(', ')}`);
-        setLoading(false);
-        return;
-      }
+      // La validación de IDs únicos ya se realizó en la pre-validación estricta
+      // Solo verificamos que la normalización conservó la unicidad
 
       console.log(`✅ ${mesasNormalizadas.length} mesas listas para generar QR`);
 
@@ -249,51 +249,28 @@ const TableQRTab = () => {
       // Debug y validación detallada
       debugQRGeneration(mesasNormalizadas, finalQRs);
 
-      // Validación exhaustiva de URLs únicas
-      const urls = finalQRs.map(qr => qr.paymentUrl);
-      const urlsUnicas = [...new Set(urls)];
+      // VALIDACIÓN FINAL ESTRICTA usando la función mejorada
+      console.log('🔍 EJECUTANDO VALIDACIÓN FINAL ESTRICTA DE QRs GENERADOS');
 
-      console.log(`🔍 [VALIDACIÓN FINAL] Verificación de URLs generadas:`, {
-        total_qrs: finalQRs.length,
-        urls_generadas: urls,
-        urls_unicas: urlsUnicas,
-        son_todas_unicas: urls.length === urlsUnicas.length
-      });
+      if (!validateTableQRs(finalQRs)) {
+        console.error('❌ PARADA CRÍTICA: La validación final de QRs falló');
 
-      if (urls.length !== urlsUnicas.length) {
-        console.error('❌ ERROR CRÍTICO: URLs duplicadas en QRs generados');
+        alert(`ERROR CRÍTICO: La validación final de QRs falló.
 
-        // Análisis detallado de URLs duplicadas
-        const urlCount = {};
-        urls.forEach((url, index) => {
-          if (!urlCount[url]) urlCount[url] = [];
-          urlCount[url].push({
-            index,
-            mesa_id: finalQRs[index].mesa_id,
-            mesa_numero: finalQRs[index].mesa_numero,
-            qr: finalQRs[index]
-          });
-        });
+        Los QRs generados no pasaron las verificaciones de seguridad:
+        - Verificación de URLs únicas
+        - Verificación de Mesa IDs únicos
+        - Verificación de formato de URLs
+        - Verificación de correspondencia Mesa ID <-> URL
 
-        const urlsDuplicadas = Object.entries(urlCount)
-          .filter(([url, ocurrencias]) => ocurrencias.length > 1);
-
-        console.error('📊 URLs duplicadas encontradas:', urlsDuplicadas);
-
-        alert(`ERROR CRÍTICO: Se generaron URLs duplicadas.
-        Esto significa que múltiples mesas tendrán el mismo QR.
-
-        URLs duplicadas: ${urlsDuplicadas.length}
-
-        Revisa la consola para más detalles y contacta con soporte técnico.`);
+        Revisa la consola para detalles específicos.
+        No se pueden usar los QRs hasta que se resuelvan estos problemas.`);
 
         setLoading(false);
         return;
       }
 
-      if (!validateTableQRs(finalQRs)) {
-        alert('Advertencia: Se detectaron posibles problemas con los QR generados. Revisa la consola para más detalles.');
-      }
+      console.log('✅ VALIDACIÓN FINAL EXITOSA: Todos los QRs son únicos y válidos');
 
       setTableQRs(finalQRs);
 
@@ -712,7 +689,27 @@ const TableQRTab = () => {
               }}
               icon={Settings}
             >
-              Diagnosticar
+              Diagnóstico Completo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                console.log('⚡ Ejecutando diagnóstico rápido de QRs en DOM...');
+                const result = quickQRDiagnostic();
+                console.log('📋 Resultado:', result);
+                if (result.error) {
+                  alert(`❌ Error en diagnóstico: ${result.error}`);
+                } else {
+                  alert(result.isUnique
+                    ? `✅ ${result.totalQRs} QRs únicos encontrados`
+                    : `❌ ${result.totalQRs} QRs encontrados, ${result.uniqueQRs} únicos - HAY DUPLICADOS`
+                  );
+                }
+              }}
+              icon={Search}
+            >
+              Test DOM
             </Button>
           </div>
         </div>
