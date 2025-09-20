@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Users, Filter, Plus, Edit, Trash2 } from 'lucide-react';
+import { Users, Filter, Plus, Edit, Trash2, QrCode, Download, RotateCcw, X } from 'lucide-react';
 import TableCard from './TableCard';
 import MesaModal from './MesaModal';
 import HistorialMesaModal from './HistorialMesaModal';
@@ -24,7 +24,9 @@ function MesasTab({ mesas }) {
   const [filtroCapacidad, setFiltroCapacidad] = useState('todas');
   const [modalMesa, setModalMesa] = useState({ abierto: false, mesa: null, modo: 'crear' });
   const [modalHistorial, setModalHistorial] = useState({ abierto: false, mesa: null });
-  
+  const [modalQR, setModalQR] = useState({ abierto: false, mesa: null, qrData: null });
+  const [generandoQRs, setGenerandoQRs] = useState(false);
+
   const { actualizarDatosEspejo } = useAppContext();
   const { mostrarMensaje } = useMessage();
 
@@ -113,6 +115,76 @@ function MesasTab({ mesas }) {
     }
   };
 
+  /**
+   * Genera QR para una mesa específica
+   */
+  const generarQRMesa = async (mesa) => {
+    try {
+      const response = await mirrorService.generarQRMesa(mesa.id);
+      if (response.exito) {
+        setModalQR({
+          abierto: true,
+          mesa,
+          qrData: response.qr
+        });
+        mostrarMensaje(`QR generado para Mesa ${mesa.numero_mesa}`, 'success');
+      } else {
+        mostrarMensaje(response.mensaje || 'Error generando QR', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al generar QR: ' + error.message, 'error');
+    }
+  };
+
+  /**
+   * Reset de la factura de una mesa
+   */
+  const resetearFacturaMesa = async (mesa) => {
+    if (!window.confirm(`¿Estás seguro de resetear la cuenta de Mesa ${mesa.numero_mesa}? Esto creará una nueva factura vacía.`)) {
+      return;
+    }
+
+    try {
+      const response = await mirrorService.resetearFacturaMesa(mesa.id);
+      if (response.exito) {
+        mostrarMensaje(response.mensaje, 'success');
+        await actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(response.mensaje || 'Error al resetear factura', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al resetear factura: ' + error.message, 'error');
+    }
+  };
+
+  /**
+   * Genera QRs para todas las mesas
+   */
+  const generarTodosLosQRs = async () => {
+    if (!window.confirm('¿Generar QRs para todas las mesas?')) {
+      return;
+    }
+
+    setGenerandoQRs(true);
+    try {
+      const response = await mirrorService.generarTodosLosQRs();
+      if (response.exito) {
+        mostrarMensaje(response.mensaje, 'success');
+        await actualizarDatosEspejo();
+      } else {
+        mostrarMensaje(response.mensaje || 'Error generando QRs', 'error');
+      }
+    } catch (error) {
+      mostrarMensaje('Error al generar QRs: ' + error.message, 'error');
+    } finally {
+      setGenerandoQRs(false);
+    }
+  };
+
+  const cerrarModalQR = () => {
+    setModalQR({ abierto: false, mesa: null, qrData: null });
+  };
+
   const stats = calcularEstadisticas();
   const mesasParaMostrar = mesasFiltradas();
 
@@ -149,14 +221,29 @@ function MesasTab({ mesas }) {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Estado de Mesas</h2>
-          
-          <button
-            onClick={abrirModalCrear}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nueva Mesa</span>
-          </button>
+
+          <div className="flex space-x-2">
+            <button
+              onClick={generarTodosLosQRs}
+              disabled={generandoQRs}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+            >
+              {generandoQRs ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>{generandoQRs ? 'Generando...' : 'Generar QRs'}</span>
+            </button>
+
+            <button
+              onClick={abrirModalCrear}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nueva Mesa</span>
+            </button>
+          </div>
           
           {/* Filtros */}
           <div className="flex items-center space-x-4">
@@ -201,27 +288,51 @@ function MesasTab({ mesas }) {
                   onDoubleClick={() => abrirHistorial(mesa)}
                   onClick={() => abrirHistorial(mesa)}
                 />
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      abrirModalEditar(mesa);
-                    }}
-                    className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 text-xs"
-                    title="Editar mesa"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      eliminarMesa(mesa.id);
-                    }}
-                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 text-xs"
-                    title="Eliminar mesa"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col space-y-1">
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        generarQRMesa(mesa);
+                      }}
+                      className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 text-xs"
+                      title="Ver QR de mesa"
+                    >
+                      <QrCode className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resetearFacturaMesa(mesa);
+                      }}
+                      className="bg-green-500 text-white p-1 rounded hover:bg-green-600 text-xs"
+                      title="Resetear factura"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        abrirModalEditar(mesa);
+                      }}
+                      className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600 text-xs"
+                      title="Editar mesa"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        eliminarMesa(mesa.id);
+                      }}
+                      className="bg-red-500 text-white p-1 rounded hover:bg-red-600 text-xs"
+                      title="Eliminar mesa"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -243,6 +354,67 @@ function MesasTab({ mesas }) {
         mesa={modalHistorial.mesa}
         onCerrar={cerrarModales}
       />
+
+      {/* Modal de QR */}
+      {modalQR.abierto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">
+                QR Mesa {modalQR.mesa?.numero_mesa}
+              </h3>
+              <button
+                onClick={cerrarModalQR}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {modalQR.qrData && (
+              <div className="text-center space-y-4">
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <div className="w-48 h-48 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                    <QrCode className="w-24 h-24 text-gray-400" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Código: {modalQR.qrData.code}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">
+                    URL de Pago:
+                  </p>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-xs text-gray-600 break-all">
+                      {modalQR.qrData.payment_url}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(modalQR.qrData.payment_url);
+                      mostrarMensaje('URL copiada al portapapeles', 'success');
+                    }}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Copiar URL
+                  </button>
+                  <button
+                    onClick={() => window.open(modalQR.qrData.payment_url, '_blank')}
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Abrir
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

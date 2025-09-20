@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Users, MapPin } from 'lucide-react';
+import { Users, MapPin, Receipt, QrCode } from 'lucide-react';
 import { ESTADOS_MESA } from '../../types';
 
 /**
@@ -84,7 +84,39 @@ function TableCard({ mesa, onClick, onDoubleClick }) {
       <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${estilos.badge}`}>
         {esOcupada ? 'OCUPADA' : 'LIBRE'}
       </span>
-      
+
+      {/* Información de factura */}
+      {(mesa.cuenta_status || mesa.items_count > 0 || mesa.cuenta_total > 0) && (
+        <div className="mt-2 pt-2 border-t border-gray-300">
+          <div className="flex items-center justify-center mb-1">
+            <Receipt className="w-3 h-3 mr-1 text-blue-600" />
+            <span className="text-xs font-medium text-blue-600">
+              Factura: {mesa.cuenta_status || 'empty'}
+            </span>
+          </div>
+          {mesa.items_count > 0 && (
+            <p className="text-xs text-gray-600">
+              {mesa.items_count} item{mesa.items_count !== 1 ? 's' : ''}
+            </p>
+          )}
+          {mesa.cuenta_total > 0 && (
+            <p className="text-xs font-bold text-gray-700">
+              €{mesa.cuenta_total.toFixed(2)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Indicador de QR disponible */}
+      {mesa.qr_code && (
+        <div className="mt-1">
+          <div className="flex items-center justify-center">
+            <QrCode className="w-3 h-3 mr-1 text-green-600" />
+            <span className="text-xs text-green-600">QR Disponible</span>
+          </div>
+        </div>
+      )}
+
       {/* Información adicional si está ocupada */}
       {esOcupada && mesa.reserva_actual && (
         <div className="mt-2 pt-2 border-t border-red-300">

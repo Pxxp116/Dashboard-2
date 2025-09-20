@@ -242,6 +242,50 @@ class SystemService {
       throw error;
     }
   }
+
+  /**
+   * Genera QR para una mesa específica
+   * @param {number} mesaId - ID de la mesa
+   * @returns {Promise<{exito: boolean, qr: Object}>}
+   */
+  async generarQRMesa(mesaId) {
+    try {
+      const response = await apiClient.get(`/mesa/${mesaId}/qr`);
+      return response;
+    } catch (error) {
+      console.error('Error generando QR de mesa:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Genera QRs para todas las mesas
+   * @returns {Promise<{exito: boolean, mesas: Array}>}
+   */
+  async generarTodosLosQRs() {
+    try {
+      const response = await apiClient.get('/mesas/qr/all');
+      return response;
+    } catch (error) {
+      console.error('Error generando QRs de todas las mesas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resetea la factura de una mesa (crea nueva factura vacía)
+   * @param {number} mesaId - ID de la mesa
+   * @returns {Promise<{exito: boolean, mensaje: string}>}
+   */
+  async resetearFacturaMesa(mesaId) {
+    try {
+      const response = await apiClient.post(`/mesa/${mesaId}/reset-cuenta`);
+      return response;
+    } catch (error) {
+      console.error('Error reseteando factura de mesa:', error);
+      throw error;
+    }
+  }
 }
 
 // Exportar instancia singleton
