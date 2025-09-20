@@ -198,7 +198,20 @@ export const calculateItemBasedSplit = (items, participants) => {
 };
 
 /**
- * Genera datos de ejemplo para demostración
+ * Genera configuración inicial vacía para una mesa
+ * @param {number} mesaId - ID de la mesa
+ * @returns {Object} Configuración inicial vacía
+ */
+export const generateEmptyPaymentData = (mesaId) => {
+  return {
+    totalAmount: 0,
+    items: [],
+    participants: []
+  };
+};
+
+/**
+ * Genera datos de ejemplo para demostración (OPCIONAL - solo para pruebas)
  * @param {number} mesaId - ID de la mesa
  * @returns {Object} Datos de ejemplo
  */
@@ -354,6 +367,7 @@ export default {
   updateTablePaymentStatus,
   calculateEqualSplit,
   calculateItemBasedSplit,
+  generateEmptyPaymentData,
   generateDemoPaymentData,
   validateSplitPaymentData,
   formatCurrency,

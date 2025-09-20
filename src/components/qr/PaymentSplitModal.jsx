@@ -60,11 +60,11 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
         setItems(tableQR.items || []);
         setSplitMode(tableQR.splitMode || SPLIT_MODES.EQUAL);
       } else {
-        // Cargar datos de demostración
-        const demoData = generateDemoPaymentData(tableQR.mesa_id);
-        setTotalAmount(demoData.totalAmount);
-        setItems(demoData.items);
-        setParticipants(demoData.participants);
+        // Inicializar con configuración vacía
+        setTotalAmount(0);
+        setItems([]);
+        setParticipants([]);
+        setSplitMode(SPLIT_MODES.EQUAL);
       }
       setErrors({});
       setShowPreview(false);
@@ -211,16 +211,6 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
     }
   };
 
-  /**
-   * Carga datos de ejemplo
-   */
-  const loadDemoData = () => {
-    const demoData = generateDemoPaymentData(tableQR?.mesa_id || 1);
-    setTotalAmount(demoData.totalAmount);
-    setItems(demoData.items);
-    setParticipants(demoData.participants);
-    setSplitMode(SPLIT_MODES.BY_ITEMS);
-  };
 
   const splitResult = calculateSplit();
   const validation = validateConfiguration();
@@ -290,14 +280,6 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={loadDemoData}
-                    icon={ShoppingCart}
-                  >
-                    Cargar Datos Demo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => setShowPreview(!showPreview)}
                     icon={Calculator}
                   >
@@ -323,8 +305,23 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                   </Button>
                 </div>
 
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {participants.map((participant, index) => (
+                {participants.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/50">
+                    <Users className="w-8 h-8 text-blue-500 mx-auto mb-3" />
+                    <p className="text-slate-800 font-semibold mb-1">Configura tu cuenta para esta mesa</p>
+                    <p className="text-sm text-slate-600 mb-4">Agrega participantes para comenzar a dividir la cuenta</p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={addParticipant}
+                      icon={Plus}
+                    >
+                      Agregar primer participante
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {participants.map((participant, index) => (
                     <div key={participant.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
                       <User className="w-4 h-4 text-slate-400" />
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -352,7 +349,8 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                       </button>
                     </div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Ítems (solo en modo por ítems) */}
@@ -373,8 +371,23 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                     </Button>
                   </div>
 
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {items.map((item, index) => (
+                  {items.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-emerald-300 rounded-lg bg-emerald-50/50">
+                      <ShoppingCart className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
+                      <p className="text-slate-800 font-semibold mb-1">No hay productos en la cuenta</p>
+                      <p className="text-sm text-slate-600 mb-4">Agrega productos para comenzar</p>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={addItem}
+                        icon={Plus}
+                      >
+                        Agregar primer producto
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {items.map((item, index) => (
                       <div key={item.id} className="p-3 bg-white rounded-lg border">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -425,7 +438,8 @@ const PaymentSplitModal = ({ isOpen, onClose, onSave, tableQR = null }) => {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 

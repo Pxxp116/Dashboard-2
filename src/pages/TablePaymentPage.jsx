@@ -23,14 +23,16 @@ import {
   Receipt,
   Shield,
   Check,
-  X
+  X,
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import {
   SPLIT_MODES,
   formatCurrency,
   calculateEqualSplit,
   calculateItemBasedSplit,
-  generateDemoPaymentData
+  generateEmptyPaymentData
 } from '../utils/tableQRGenerator';
 
 /**
@@ -56,15 +58,15 @@ const TablePaymentPage = ({ mesaId }) => {
     const loadTableData = async () => {
       setLoading(true);
       try {
-        // En implementación real, esto vendría del backend
-        const demoData = generateDemoPaymentData(mesaId);
+        // Inicializar con configuración vacía
+        const emptyData = generateEmptyPaymentData(mesaId);
         setTableData({
           mesa_numero: mesaId || '1',
           mesa_id: mesaId || 1,
-          ...demoData
+          ...emptyData
         });
 
-        // Inicializar participantes por defecto
+        // Inicializar con el cliente actual como primer participante
         setParticipants([
           { id: 1, name: '', phone: '', selectedItems: [], amount: 0 }
         ]);
@@ -108,6 +110,60 @@ const TablePaymentPage = ({ mesaId }) => {
     setParticipants(prev => prev.map((participant, i) =>
       i === index ? { ...participant, [field]: value } : participant
     ));
+  };
+
+  /**
+   * Agrega un nuevo producto a la cuenta
+   */
+  const addItem = () => {
+    const newItem = {
+      id: Date.now(),
+      name: '',
+      price: 0,
+      category: 'General'
+    };
+    setTableData(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  /**
+   * Actualiza un producto
+   */
+  const updateItem = (index, field, value) => {
+    setTableData(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) =>
+        i === index ? { ...item, [field]: field === 'price' ? parseFloat(value) || 0 : value } : item
+      ),
+      totalAmount: field === 'price' ?
+        prev.items.reduce((sum, item, i) => sum + (i === index ? (parseFloat(value) || 0) : item.price), 0) :
+        prev.totalAmount
+    }));
+  };
+
+  /**
+   * Elimina un producto
+   */
+  const removeItem = (index) => {
+    setTableData(prev => {
+      const newItems = prev.items.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        items: newItems,
+        totalAmount: newItems.reduce((sum, item) => sum + item.price, 0)
+      };
+    });
+
+    // Eliminar el ítem de las selecciones de participantes
+    const itemId = tableData.items[index]?.id;
+    if (itemId) {
+      setParticipants(prev => prev.map(participant => ({
+        ...participant,
+        selectedItems: participant.selectedItems.filter(id => id !== itemId)
+      })));
+    }
   };
 
   /**
@@ -272,18 +328,68 @@ const TablePaymentPage = ({ mesaId }) => {
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                    <ShoppingCart className="w-4 h-4" />
-                    Ítems de la cuenta
-                  </h3>
-                  <div className="space-y-2">
-                    {tableData.items.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-gray-700">{item.name}</span>
-                        <span className="font-medium">{formatCurrency(item.price)}</span>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      Productos de la cuenta
+                    </h3>
+                    <button
+                      onClick={addItem}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Agregar
+                    </button>
                   </div>
+                  {tableData.items.length === 0 ? (
+                    <div className="text-center py-6 border-2 border-dashed border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+                      <ShoppingCart className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                      <p className="text-blue-700 font-semibold mb-1">Configura tu cuenta para esta mesa</p>
+                      <p className="text-blue-600 text-sm mb-3">Agrega productos para comenzar a dividir la cuenta</p>
+                      <button
+                        onClick={addItem}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                      >
+                        Agregar primer producto
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tableData.items.map((item, index) => (
+                        <div key={item.id} className="bg-white rounded-lg p-3 border">
+                          <div className="grid grid-cols-3 gap-2 mb-2">
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={(e) => updateItem(index, 'name', e.target.value)}
+                              placeholder="Nombre del producto"
+                              className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateItem(index, 'price', e.target.value)}
+                              placeholder="Precio"
+                              className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <button
+                              onClick={() => removeItem(index)}
+                              className="text-red-500 hover:text-red-700 text-xs flex items-center justify-center"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          {item.name && item.price > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-700">{item.name}</span>
+                              <span className="font-medium">{formatCurrency(item.price)}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -323,10 +429,12 @@ const TablePaymentPage = ({ mesaId }) => {
 
               <button
                 onClick={() => setCurrentStep('split')}
-                disabled={!customerInfo.name.trim()}
+                disabled={!customerInfo.name.trim() || tableData.items.length === 0}
                 className="w-full bg-blue-500 text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Continuar
+                {!customerInfo.name.trim() ? 'Ingresa tu nombre para continuar' :
+                 tableData.items.length === 0 ? 'Agrega productos para continuar' :
+                 'Continuar a división de pago'}
               </button>
             </div>
           )}
@@ -416,34 +524,61 @@ const TablePaymentPage = ({ mesaId }) => {
               {/* División por ítems */}
               {splitMode === SPLIT_MODES.BY_ITEMS && (
                 <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h4 className="font-medium text-gray-900 mb-4">Selecciona tus ítems</h4>
-                  <div className="space-y-3">
-                    {tableData.items.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setSelectedItems(prev =>
-                            prev.includes(item.id)
-                              ? prev.filter(id => id !== item.id)
-                              : [...prev, item.id]
-                          );
-                        }}
-                        className={`w-full p-3 rounded-lg border-2 transition-colors text-left ${
-                          selectedItems.includes(item.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium text-gray-900">{item.name}</p>
-                            <p className="text-sm text-gray-600">{item.category}</p>
-                          </div>
-                          <p className="font-bold text-gray-900">{formatCurrency(item.price)}</p>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-gray-900">Selecciona tus ítems</h4>
+                    <button
+                      onClick={addItem}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Agregar producto
+                    </button>
                   </div>
+
+                  {tableData.items.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-purple-300 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50">
+                      <ShoppingCart className="w-8 h-8 text-purple-500 mx-auto mb-3" />
+                      <p className="text-purple-700 font-semibold mb-1">No hay productos en la cuenta</p>
+                      <p className="text-sm text-purple-600 mb-4">Agrega productos para poder seleccionar los tuyos</p>
+                      <button
+                        onClick={addItem}
+                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                      >
+                        Agregar primer producto
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tableData.items.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedItems(prev =>
+                              prev.includes(item.id)
+                                ? prev.filter(id => id !== item.id)
+                                : [...prev, item.id]
+                            );
+                          }}
+                          disabled={!item.name || item.price <= 0}
+                          className={`w-full p-3 rounded-lg border-2 transition-colors text-left ${
+                            selectedItems.includes(item.id)
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          } ${(!item.name || item.price <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {item.name || 'Sin nombre'}
+                              </p>
+                              <p className="text-sm text-gray-600">{item.category}</p>
+                            </div>
+                            <p className="font-bold text-gray-900">{formatCurrency(item.price)}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {selectedItems.length > 0 && (
                     <div className="mt-4 bg-blue-50 rounded-lg p-4 text-center">
