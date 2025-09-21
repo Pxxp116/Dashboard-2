@@ -23,9 +23,11 @@ import {
 import QRGenerator from './QRGenerator';
 import TableAccountManager from './TableAccountManager';
 import PaymentStatus from './PaymentStatus';
+import QRTester from './QRTester';
+import splitQRService from '../../services/api/splitQRService';
 
 const SplitQRTab = () => {
-  const [activeView, setActiveView] = useState('overview'); // 'overview', 'qr-generator', 'accounts', 'payments'
+  const [activeView, setActiveView] = useState('overview'); // 'overview', 'qr-generator', 'accounts', 'payments', 'tester'
   const [mesasData, setMesasData] = useState([]);
   const [cuentasActivas, setCuentasActivas] = useState([]);
   const [estadisticas, setEstadisticas] = useState({
@@ -47,56 +49,39 @@ const SplitQRTab = () => {
   const cargarDatosSplitQR = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // TODO: Implementar llamadas reales al API
-      // Por ahora usamos datos de ejemplo
-      const mesasEjemplo = [
-        { id: 1, numero: 1, capacidad: 4, estado: 'disponible', tiene_cuenta: false },
-        { id: 2, numero: 2, capacidad: 2, estado: 'ocupada', tiene_cuenta: true },
-        { id: 3, numero: 3, capacidad: 6, estado: 'ocupada', tiene_cuenta: true },
-        { id: 4, numero: 4, capacidad: 4, estado: 'disponible', tiene_cuenta: false },
-        { id: 5, numero: 5, capacidad: 2, estado: 'ocupada', tiene_cuenta: false }
-      ];
+      // Cargar datos reales desde el API
+      const response = await splitQRService.obtenerEstadoMesas();
 
-      const cuentasEjemplo = [
-        {
-          id: 1,
-          mesa_id: 2,
-          mesa_numero: 2,
-          qr_code_id: 'QR1642345678001',
-          total: 45.60,
-          pagado: 22.80,
-          pendiente: 22.80,
-          items_count: 5,
-          fecha_apertura: '2024-01-20T14:30:00Z',
-          estado: 'abierta'
-        },
-        {
-          id: 2,
-          mesa_id: 3,
-          mesa_numero: 3,
-          qr_code_id: 'QR1642345678002',
-          total: 78.40,
-          pagado: 78.40,
-          pendiente: 0,
-          items_count: 8,
-          fecha_apertura: '2024-01-20T13:15:00Z',
-          estado: 'pagada'
-        }
-      ];
+      if (response.exito && response.data) {
+        const { mesas, cuentas_activas, estadisticas } = response.data;
 
-      setMesasData(mesasEjemplo);
-      setCuentasActivas(cuentasEjemplo);
-      setEstadisticas({
-        mesasConCuenta: cuentasEjemplo.length,
-        totalRecaudado: cuentasEjemplo.reduce((sum, c) => sum + c.pagado, 0),
-        pagosPendientes: cuentasEjemplo.filter(c => c.pendiente > 0).length,
-        pagosCompletados: cuentasEjemplo.filter(c => c.pendiente === 0).length
-      });
+        setMesasData(mesas || []);
+        setCuentasActivas(cuentas_activas || []);
+        setEstadisticas(estadisticas || {
+          mesasConCuenta: 0,
+          totalRecaudado: 0,
+          pagosPendientes: 0,
+          pagosCompletados: 0
+        });
+      } else {
+        throw new Error(response.mensaje || 'Error al cargar datos');
+      }
 
     } catch (err) {
-      setError('Error al cargar datos de SplitQR');
-      console.error('Error:', err);
+      setError('Error al cargar datos de SplitQR: ' + err.message);
+      console.error('Error cargando datos SplitQR:', err);
+
+      // En caso de error, mantener datos vacíos
+      setMesasData([]);
+      setCuentasActivas([]);
+      setEstadisticas({
+        mesasConCuenta: 0,
+        totalRecaudado: 0,
+        pagosPendientes: 0,
+        pagosCompletados: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -105,31 +90,32 @@ const SplitQRTab = () => {
   // Abrir nueva cuenta para mesa
   const abrirCuentaMesa = async (mesaId) => {
     try {
-      // TODO: Implementar llamada real al API
       console.log(`Abriendo cuenta para mesa ${mesaId}`);
 
-      // Simular creación de cuenta
-      const nuevaCuenta = {
-        id: Date.now(),
-        mesa_id: mesaId,
-        mesa_numero: mesasData.find(m => m.id === mesaId)?.numero,
-        qr_code_id: `QR${Date.now()}${Math.floor(Math.random() * 1000)}`,
-        total: 0,
-        pagado: 0,
-        pendiente: 0,
-        items_count: 0,
-        fecha_apertura: new Date().toISOString(),
-        estado: 'abierta'
-      };
+      // Llamar al API real
+      const response = await splitQRService.abrirCuentaMesa(mesaId);
 
-      setCuentasActivas(prev => [...prev, nuevaCuenta]);
-      setMesasData(prev => prev.map(mesa =>
-        mesa.id === mesaId ? { ...mesa, tiene_cuenta: true } : mesa
-      ));
+      if (response.exito && response.cuenta) {
+        console.log('Cuenta abierta exitosamente:', response.cuenta);
 
-      return nuevaCuenta;
+        // Actualizar estado local
+        setCuentasActivas(prev => [...prev, response.cuenta]);
+        setMesasData(prev => prev.map(mesa =>
+          mesa.id === mesaId ? { ...mesa, tiene_cuenta: true } : mesa
+        ));
+
+        // Recargar datos para mantener sincronización
+        setTimeout(() => {
+          cargarDatosSplitQR();
+        }, 1000);
+
+        return response.cuenta;
+      } else {
+        throw new Error(response.mensaje || 'Error al abrir cuenta');
+      }
     } catch (err) {
       console.error('Error abriendo cuenta:', err);
+      setError(`Error al abrir cuenta: ${err.message}`);
       throw err;
     }
   };
@@ -215,6 +201,16 @@ const SplitQRTab = () => {
             }`}
           >
             Pagos
+          </button>
+          <button
+            onClick={() => setActiveView('tester')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeView === 'tester'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Testing QR
           </button>
         </div>
       </div>
@@ -390,6 +386,11 @@ const SplitQRTab = () => {
           cuentasActivas={cuentasActivas}
           onActualizar={cargarDatosSplitQR}
         />
+      )}
+
+      {/* Vista Testing QR */}
+      {activeView === 'tester' && (
+        <QRTester />
       )}
     </div>
   );

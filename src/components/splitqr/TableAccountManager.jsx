@@ -22,6 +22,7 @@ import {
   QrCode,
   Link
 } from 'lucide-react';
+import splitQRService from '../../services/api/splitQRService';
 
 const TableAccountManager = ({ cuentasActivas, mesasData, onActualizar }) => {
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState(null);
@@ -29,6 +30,8 @@ const TableAccountManager = ({ cuentasActivas, mesasData, onActualizar }) => {
   const [modalEditarCuenta, setModalEditarCuenta] = useState(false);
   const [filtro, setFiltro] = useState('todas'); // 'todas', 'abiertas', 'pagadas', 'parciales'
   const [busqueda, setBusqueda] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: '',
     precio: '',
@@ -63,22 +66,27 @@ const TableAccountManager = ({ cuentasActivas, mesasData, onActualizar }) => {
     return coincideBusqueda && coincideFiltro;
   });
 
-  // Agregar producto a cuenta
+  // Agregar producto a cuenta usando API real
   const agregarProducto = async (cuentaId, producto) => {
     try {
-      // TODO: Implementar llamada real al API
       console.log(`Agregando producto ${producto.nombre} a cuenta ${cuentaId}`);
 
-      // Simular agregado de producto
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Llamar al servicio real
+      const response = await splitQRService.agregarProducto(cuentaId, producto);
 
-      // Aquí actualizarías el estado local o recargarías los datos
-      onActualizar();
+      if (response.exito) {
+        console.log('Producto agregado exitosamente:', response.item);
 
-      return true;
+        // Recargar datos para mantener sincronización
+        onActualizar();
+
+        return true;
+      } else {
+        throw new Error(response.mensaje || 'Error agregando producto');
+      }
     } catch (error) {
       console.error('Error agregando producto:', error);
-      return false;
+      throw new Error(`Error al agregar producto: ${error.message}`);
     }
   };
 
@@ -109,36 +117,72 @@ const TableAccountManager = ({ cuentasActivas, mesasData, onActualizar }) => {
     }
   };
 
-  // Cerrar cuenta
+  // Cerrar cuenta usando API real
   const cerrarCuenta = async (cuentaId) => {
     if (!window.confirm('¿Estás seguro de que quieres cerrar esta cuenta?')) return;
 
     try {
-      // TODO: Implementar llamada real al API
       console.log(`Cerrando cuenta ${cuentaId}`);
-      onActualizar();
+
+      // Llamar al servicio real
+      const response = await splitQRService.cerrarCuenta(cuentaId);
+
+      if (response.exito) {
+        console.log('Cuenta cerrada exitosamente');
+
+        // Recargar datos para mantener sincronización
+        onActualizar();
+      } else {
+        throw new Error(response.mensaje || 'Error cerrando cuenta');
+      }
     } catch (error) {
       console.error('Error cerrando cuenta:', error);
+      alert(`Error al cerrar cuenta: ${error.message}`);
     }
   };
 
-  // Obtener cuenta con items de ejemplo
-  const getCuentaConItems = (cuenta) => {
-    // En producción estos vendrían del backend
-    const itemsEjemplo = [
-      { id: 1, nombre: 'Paella Valenciana', precio: 18.50, cantidad: 2, categoria: 'Platos principales' },
-      { id: 2, nombre: 'Gazpacho', precio: 8.90, cantidad: 1, categoria: 'Entrantes' },
-      { id: 3, nombre: 'Vino Tinto', precio: 4.20, cantidad: 3, categoria: 'Bebidas' }
-    ];
+  // Obtener cuenta con items reales del backend
+  const getCuentaConItems = async (cuenta) => {
+    try {
+      // Obtener los datos completos de la cuenta desde el API
+      const response = await splitQRService.obtenerCuentaMesa(cuenta.mesa_id);
 
-    return {
-      ...cuenta,
-      items: itemsEjemplo
-    };
+      if (response.exito && response.cuenta) {
+        return response.cuenta;
+      } else {
+        // Fallback si no se pueden obtener los datos
+        console.warn('No se pudieron obtener los items de la cuenta, usando datos base');
+        return {
+          ...cuenta,
+          items: []
+        };
+      }
+    } catch (error) {
+      console.error('Error obteniendo cuenta con items:', error);
+      // Fallback si hay error
+      return {
+        ...cuenta,
+        items: []
+      };
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Mensaje de error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <span className="text-red-800">{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto p-1 hover:bg-red-100 rounded"
+          >
+            <X className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      )}
+
       {/* Header con controles */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -305,19 +349,41 @@ const TableAccountManager = ({ cuentasActivas, mesasData, onActualizar }) => {
                     {/* Acciones */}
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setCuentaSeleccionada(getCuentaConItems(cuenta))}
-                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            setError(null);
+                            const cuentaCompleta = await getCuentaConItems(cuenta);
+                            setCuentaSeleccionada(cuentaCompleta);
+                          } catch (err) {
+                            setError(`Error al cargar detalles: ${err.message}`);
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        disabled={loading}
+                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
                       >
                         <Eye className="w-4 h-4" />
                         Ver detalles
                       </button>
 
                       <button
-                        onClick={() => {
-                          setCuentaSeleccionada(getCuentaConItems(cuenta));
-                          setModalProducto(true);
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            setError(null);
+                            const cuentaCompleta = await getCuentaConItems(cuenta);
+                            setCuentaSeleccionada(cuentaCompleta);
+                            setModalProducto(true);
+                          } catch (err) {
+                            setError(`Error al cargar cuenta: ${err.message}`);
+                          } finally {
+                            setLoading(false);
+                          }
                         }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        disabled={loading}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
                       >
                         <Plus className="w-4 h-4" />
                         Agregar

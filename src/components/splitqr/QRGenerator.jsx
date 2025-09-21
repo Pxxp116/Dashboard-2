@@ -15,6 +15,7 @@ import {
   Plus,
   Settings
 } from 'lucide-react';
+import splitQRService from '../../services/api/splitQRService';
 
 const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar }) => {
   const [selectedMesa, setSelectedMesa] = useState(null);
@@ -102,31 +103,38 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
     }
   };
 
-  // Descargar QR como imagen
-  const descargarQR = async (cuenta, mesa) => {
+  // Descargar QR como imagen usando el servicio real
+  const descargarQR = async (cuenta, mesa, formato = 'png') => {
     try {
-      const dataUrl = await generarQRCode(cuenta.qr_code_id, mesa);
+      setGenerandoQR(true);
 
-      const link = document.createElement('a');
-      link.download = `QR-Mesa-${mesa.numero}-${cuenta.qr_code_id}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Usar el servicio real para descargar la imagen QR
+      await splitQRService.descargarImagenQR(cuenta.id, formato, qrConfig.size);
 
       mostrarMensaje(`QR de Mesa ${mesa.numero} descargado correctamente`);
     } catch (error) {
-      mostrarMensaje('Error al descargar QR', 'error');
+      console.error('Error descargando QR:', error);
+      mostrarMensaje('Error al descargar QR: ' + error.message, 'error');
+    } finally {
+      setGenerandoQR(false);
     }
   };
 
-  // Copiar enlace al portapapeles
-  const copiarEnlace = async (qrCodeId, mesaNumero) => {
+  // Copiar enlace al portapapeles usando URL real
+  const copiarEnlace = async (cuenta, mesaNumero) => {
     try {
-      const paymentUrl = process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app';
-      const url = `${paymentUrl}/mesa/${qrCodeId}/pago`;
-      await navigator.clipboard.writeText(url);
-      mostrarMensaje(`Enlace de Mesa ${mesaNumero} copiado al portapapeles`);
+      // Obtener la URL real del servicio
+      const response = await splitQRService.obtenerURLQR(cuenta.id);
+
+      if (response.exito && response.data) {
+        await navigator.clipboard.writeText(response.data.payment_url);
+        mostrarMensaje(`Enlace de Mesa ${mesaNumero} copiado al portapapeles`);
+      } else {
+        throw new Error('Error obteniendo URL del QR');
+      }
     } catch (error) {
-      mostrarMensaje('Error al copiar enlace', 'error');
+      console.error('Error copiando enlace:', error);
+      mostrarMensaje('Error al copiar enlace: ' + error.message, 'error');
     }
   };
 
@@ -147,11 +155,32 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
   // Vista previa del QR
   const mostrarPreview = async (cuenta, mesa) => {
     try {
-      await generarQRCode(cuenta.qr_code_id, mesa);
       setSelectedMesa({ cuenta, mesa });
       setModalPreview(true);
     } catch (error) {
-      mostrarMensaje('Error al generar vista previa', 'error');
+      mostrarMensaje('Error al mostrar vista previa', 'error');
+    }
+  };
+
+  // Regenerar QR para cuenta existente
+  const regenerarQR = async (cuenta, mesa) => {
+    try {
+      setGenerandoQR(true);
+
+      const response = await splitQRService.regenerarQR(cuenta.id);
+
+      if (response.exito) {
+        mostrarMensaje(`QR regenerado para Mesa ${mesa.numero}`);
+        onActualizar(); // Recargar datos
+        setModalPreview(false); // Cerrar modal
+      } else {
+        throw new Error(response.mensaje || 'Error regenerando QR');
+      }
+    } catch (error) {
+      console.error('Error regenerando QR:', error);
+      mostrarMensaje('Error al regenerar QR: ' + error.message, 'error');
+    } finally {
+      setGenerandoQR(false);
     }
   };
 
@@ -286,7 +315,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
                     </div>
 
                     <button
-                      onClick={() => copiarEnlace(cuenta.qr_code_id, mesa.numero)}
+                      onClick={() => copiarEnlace(cuenta, mesa.numero)}
                       className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
                     >
                       <Copy className="w-4 h-4" />
@@ -337,35 +366,54 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
             {/* Preview del QR */}
             <div className="text-center mb-6">
               <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
-                <canvas
-                  ref={canvasRef}
-                  className="max-w-full h-auto"
+                <iframe
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${qrConfig.size}x${qrConfig.size}&data=https://gastrobot-payment.up.railway.app/mesa/${selectedMesa.cuenta.qr_code_id}/pago`}
+                  width={qrConfig.size}
+                  height={qrConfig.size}
+                  className="border-0"
+                  title="QR Code Preview"
                 />
               </div>
 
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">URL de pago:</p>
                 <p className="text-xs font-mono text-gray-800 break-all">
-                  {process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app'}/mesa/{selectedMesa.cuenta.qr_code_id}/pago
+                  https://gastrobot-payment.up.railway.app/mesa/{selectedMesa.cuenta.qr_code_id}/pago
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  QR ID: {selectedMesa.cuenta.qr_code_id}
                 </p>
               </div>
             </div>
 
             {/* Acciones */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => descargarQR(selectedMesa.cuenta, selectedMesa.mesa)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                disabled={generandoQR}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Download className="w-4 h-4" />
                 Descargar
               </button>
               <button
-                onClick={() => copiarEnlace(selectedMesa.cuenta.qr_code_id, selectedMesa.mesa.numero)}
+                onClick={() => copiarEnlace(selectedMesa.cuenta, selectedMesa.mesa.numero)}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Share2 className="w-4 h-4" />
                 Compartir
+              </button>
+              <button
+                onClick={() => regenerarQR(selectedMesa.cuenta, selectedMesa.mesa)}
+                disabled={generandoQR}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {generandoQR ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Regenerar
               </button>
             </div>
 
