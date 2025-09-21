@@ -86,7 +86,8 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
         ctx.fillStyle = '#333333';
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
-        const url = `${window.location.origin}/mesa/${qrCodeId}`;
+        const paymentUrl = process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app';
+        const url = `${paymentUrl}/mesa/${qrCodeId}/pago`;
         ctx.fillText(url, canvas.width / 2, qrConfig.size + 20);
         ctx.fillText(`Mesa ${mesa.numero}`, canvas.width / 2, qrConfig.size + 40);
       }
@@ -120,7 +121,8 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
   // Copiar enlace al portapapeles
   const copiarEnlace = async (qrCodeId, mesaNumero) => {
     try {
-      const url = `${window.location.origin}/mesa/${qrCodeId}`;
+      const paymentUrl = process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app';
+      const url = `${paymentUrl}/mesa/${qrCodeId}/pago`;
       await navigator.clipboard.writeText(url);
       mostrarMensaje(`Enlace de Mesa ${mesaNumero} copiado al portapapeles`);
     } catch (error) {
@@ -344,7 +346,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">URL de pago:</p>
                 <p className="text-xs font-mono text-gray-800 break-all">
-                  {window.location.origin}/mesa/{selectedMesa.cuenta.qr_code_id}
+                  {process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app'}/mesa/{selectedMesa.cuenta.qr_code_id}/pago
                 </p>
               </div>
             </div>
