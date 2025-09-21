@@ -1,0 +1,119 @@
+# ================================
+# RAILWAY DEPLOY OPTIMIZATION
+# ================================
+# Este archivo optimiza el deployment excluyendo archivos innecesarios
+
+# ================================
+# DESARROLLO Y TESTING
+# ================================
+*.test.js
+*.test.jsx
+*.test.ts
+*.test.tsx
+**/__tests__/
+**/__mocks__/
+/coverage/
+/.nyc_output/
+/test/
+/tests/
+
+# ================================
+# DOCUMENTACIÓN
+# ================================
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+*.md
+/docs/
+/documentation/
+
+# ================================
+# CONFIGURACIÓN DE DESARROLLO
+# ================================
+.eslintrc*
+.prettierrc*
+.editorconfig
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+*.sublime-*
+
+# ================================
+# ARCHIVOS DE CONFIGURACIÓN LOCAL
+# ================================
+.env.local
+.env.development
+.env.test
+.env.development.local
+.env.test.local
+
+# ================================
+# ASSETS DE DESARROLLO
+# ================================
+/src/**/*.test.*
+/src/**/*.spec.*
+/src/**/*.stories.*
+/src/**/*.mdx
+/public/assets/dev/
+
+# ================================
+# BUILD ARTIFACTS (no necesarios en Railway)
+# ================================
+/build/static/js/*.map
+/build/static/css/*.map
+
+# ================================
+# LOGS Y CACHE
+# ================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn-integrity
+.cache/
+.parcel-cache/
+.eslintcache
+
+# ================================
+# ARCHIVOS TEMPORALES
+# ================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ================================
+# BACKUPS Y VERSIONES ANTIGUAS
+# ================================
+*.backup
+*.bak
+*.old
+/src_old/
+/backup/
+
+# ================================
+# NOTAS Y TODOS DE DESARROLLO
+# ================================
+TODO.md
+NOTES.md
+*.local.*
+/dev-notes/
+
+# ================================
+# STORYBOOK (si se usa)
+# ================================
+/.storybook/
+/storybook-static/
+
+# ================================
+# HERRAMIENTAS DE ANÁLISIS
+# ================================
+/bundle-analyzer/
+/webpack-bundle-analyzer/
+.size-snapshot.json
