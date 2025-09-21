@@ -36,6 +36,7 @@ import MenuTab from './components/menu/MenuTab';
 import HorariosTab from './components/schedules/HorariosTab';
 import ReservasTab from './components/reservations/ReservasTab';
 import PedidosTab from './components/orders/PedidosTab';
+import SplitQRTab from './components/splitqr/SplitQRTab';
 import { useAppContext } from './context/AppContext';
 
 // Importar configuración dinámica y features
@@ -760,6 +761,7 @@ function GastroBotDashboard() {
         )}
         {activeTab === 'pedidos' && <PedidosTab />}
         {activeTab === 'mesas' && features.TABLES && <MesasTab mesas={mesas} />}
+        {activeTab === 'splitqr' && <SplitQRTab />}
         {activeTab === 'menu' && features.MENU && <MenuTab menu={menu} />}
         {activeTab === 'politicas' && features.POLICIES && <PoliciesTab politicas={politicas} />}
 

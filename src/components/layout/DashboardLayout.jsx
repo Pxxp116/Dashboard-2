@@ -13,7 +13,8 @@ import {
   Search,
   User,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  QrCode
 } from 'lucide-react';
 
 const DashboardLayout = ({
@@ -29,6 +30,7 @@ const DashboardLayout = ({
     { id: 'reservas', icon: Calendar, label: 'Reservas', feature: 'RESERVATIONS' },
     { id: 'pedidos', icon: ShoppingBag, label: 'Pedidos', feature: null },
     { id: 'mesas', icon: Users, label: 'Mesas', feature: 'TABLES' },
+    { id: 'splitqr', icon: QrCode, label: 'SplitQR', feature: null },
     { id: 'menu', icon: Menu, label: 'Menú', feature: 'MENU' },
     { id: 'politicas', icon: Settings, label: 'Políticas', feature: 'POLICIES' }
   ].filter(item => !item.feature || features[item.feature]);
