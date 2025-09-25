@@ -6,6 +6,56 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-2-production-227a.up.railway.app/api';
 
 class SplitQRService {
+  constructor() {
+    this._paymentModuleUrl = null;
+  }
+
+  /**
+   * Obtener configuración del módulo de pago dinámicamente
+   */
+  async obtenerConfiguracionPago() {
+    try {
+      // Si ya tenemos la URL cacheada, la devolvemos
+      if (this._paymentModuleUrl) {
+        return { payment_module_url: this._paymentModuleUrl };
+      }
+
+      const response = await fetch(`${API_BASE_URL}/config/payment-module`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.exito && data.data) {
+        // Cachear la URL para futuras llamadas
+        this._paymentModuleUrl = data.data.payment_module_url;
+        return data.data;
+      }
+
+      throw new Error('No se pudo obtener la configuración del módulo de pago');
+    } catch (error) {
+      console.error('Error obteniendo configuración de pago:', error);
+      // Fallback a URL por defecto si falla
+      return {
+        payment_module_url: process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app'
+      };
+    }
+  }
+
+  /**
+   * Construir URL de pago para un QR específico
+   */
+  async construirURLPago(qrCodeId) {
+    const config = await this.obtenerConfiguracionPago();
+    return `${config.payment_module_url}/mesa/${qrCodeId}/pago`;
+  }
   /**
    * Obtener estado de todas las mesas y cuentas activas
    */

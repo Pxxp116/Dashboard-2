@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   QrCode,
   Download,
@@ -22,6 +22,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
   const [generandoQR, setGenerandoQR] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [modalPreview, setModalPreview] = useState(false);
+  const [paymentModuleUrl, setPaymentModuleUrl] = useState(null);
   const [qrConfig, setQrConfig] = useState({
     size: 256,
     includeLink: true,
@@ -31,6 +32,21 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
   });
 
   const canvasRef = useRef(null);
+
+  // Obtener URL del módulo de pago al cargar el componente
+  useEffect(() => {
+    const obtenerConfiguracion = async () => {
+      try {
+        const config = await splitQRService.obtenerConfiguracionPago();
+        setPaymentModuleUrl(config.payment_module_url);
+      } catch (error) {
+        console.error('Error obteniendo configuración de pago:', error);
+        // Fallback a URL por defecto
+        setPaymentModuleUrl(process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app');
+      }
+    };
+    obtenerConfiguracion();
+  }, []);
 
   // Mostrar mensaje temporal
   const mostrarMensaje = (texto, tipo = 'success') => {
@@ -87,8 +103,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
         ctx.fillStyle = '#333333';
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
-        const paymentUrl = process.env.REACT_APP_PAYMENT_URL || 'https://gastrobot-payment.railway.app';
-        const url = `${paymentUrl}/mesa/${qrCodeId}/pago`;
+        const url = `${paymentModuleUrl || 'https://gastrobot-payment.railway.app'}/mesa/${qrCodeId}/pago`;
         ctx.fillText(url, canvas.width / 2, qrConfig.size + 20);
         ctx.fillText(`Mesa ${mesa.numero}`, canvas.width / 2, qrConfig.size + 40);
       }
@@ -120,18 +135,13 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
     }
   };
 
-  // Copiar enlace al portapapeles usando URL real
+  // Copiar enlace al portapapeles usando URL dinámica
   const copiarEnlace = async (cuenta, mesaNumero) => {
     try {
-      // Obtener la URL real del servicio
-      const response = await splitQRService.obtenerURLQR(cuenta.id);
-
-      if (response.exito && response.data) {
-        await navigator.clipboard.writeText(response.data.payment_url);
-        mostrarMensaje(`Enlace de Mesa ${mesaNumero} copiado al portapapeles`);
-      } else {
-        throw new Error('Error obteniendo URL del QR');
-      }
+      // Construir URL dinámicamente
+      const url = await splitQRService.construirURLPago(cuenta.qr_code_id);
+      await navigator.clipboard.writeText(url);
+      mostrarMensaje(`Enlace de Mesa ${mesaNumero} copiado al portapapeles`);
     } catch (error) {
       console.error('Error copiando enlace:', error);
       mostrarMensaje('Error al copiar enlace: ' + error.message, 'error');
@@ -367,7 +377,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
             <div className="text-center mb-6">
               <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
                 <iframe
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${qrConfig.size}x${qrConfig.size}&data=https://gastrobot-payment.up.railway.app/mesa/${selectedMesa.cuenta.qr_code_id}/pago`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=${qrConfig.size}x${qrConfig.size}&data=${encodeURIComponent(`${paymentModuleUrl || 'https://gastrobot-payment.railway.app'}/mesa/${selectedMesa.cuenta.qr_code_id}/pago`)}`}
                   width={qrConfig.size}
                   height={qrConfig.size}
                   className="border-0"
@@ -378,7 +388,7 @@ const QRGenerator = ({ mesasData, cuentasActivas, onAbrirCuenta, onActualizar })
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">URL de pago:</p>
                 <p className="text-xs font-mono text-gray-800 break-all">
-                  https://gastrobot-payment.up.railway.app/mesa/{selectedMesa.cuenta.qr_code_id}/pago
+                  {paymentModuleUrl || 'https://gastrobot-payment.railway.app'}/mesa/{selectedMesa.cuenta.qr_code_id}/pago
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
                   QR ID: {selectedMesa.cuenta.qr_code_id}
